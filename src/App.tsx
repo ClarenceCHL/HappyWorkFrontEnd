@@ -3,6 +3,7 @@ import { MessageSquare, Shield, AlertTriangle, History, Image as ImageIcon, X, P
 import { Auth } from './components/Auth';
 import { Features } from './components/Features';
 import { Chat } from './components/Chat';
+import heroImage from './assets/hero-image.png';
 import './styles.css';
 
 interface ChatHistory {
@@ -593,7 +594,7 @@ function App() {
                           setShowAuth(true);
                           setAuthMode('changePassword');
                         }}
-                        className={`flex items-center gap-1.5 px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-sm font-medium shadow-sm`}
+                        className={`md:flex hidden items-center gap-1.5 px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-sm font-medium shadow-sm`}
                       >
                         <Key className="w-4 h-4" />
                         修改密码
@@ -603,7 +604,7 @@ function App() {
                         className={`flex items-center gap-1.5 px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-sm font-medium shadow-sm`}
                       >
                         <LogOut className="w-4 h-4" />
-                        退出登录
+                        <span className="md:inline hidden">退出登录</span>
                       </button>
                     </>
                   ) : (
@@ -657,11 +658,11 @@ function App() {
             </button>
           </div>
 
-          {/* Hero Section - 添加入场动画 */}
+          {/* Hero Section - 添加移动端适配 */}
           <header className="pt-12 pb-8 px-4 text-center">
             <h1 
               ref={titleRef}
-              className="text-7xl font-bold mb-8 bg-gradient-to-r from-gray-200 to-gray-400 text-transparent bg-clip-text transition-all duration-700 ease-out"
+              className="text-4xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-gray-200 to-gray-400 text-transparent bg-clip-text transition-all duration-700 ease-out"
               style={{ 
                 opacity: 0,
                 transform: 'translateY(30px)'
@@ -671,7 +672,7 @@ function App() {
             </h1>
             <p 
               ref={subtitleRef}
-              className="text-2xl text-gray-400 mb-12 transition-all duration-700 ease-out"
+              className="text-lg md:text-2xl text-gray-400 mb-12 transition-all duration-700 ease-out"
               style={{ 
                 opacity: 0,
                 transform: 'translateY(30px)'
@@ -681,38 +682,37 @@ function App() {
             </p>
           </header>
 
-          {/* Hero Image - 添加入场动画 */}
+          {/* Hero Image - 添加移动端适配 */}
           <div className="max-w-5xl mx-auto px-4 mb-12">
             <img 
               ref={heroImageRef}
-              src="/src/assets/hero-image.png" 
-              alt="职场 PUA 场景" 
-              className="w-full h-auto rounded-xl transition-all duration-1000 ease-out"
+              src={heroImage}
+              alt="hero"
+              className="w-full rounded-xl transition-all duration-1000 ease-out"
               style={{ 
-                aspectRatio: '1518/928',
-                opacity: 0,
+                opacity: 0, 
                 transform: 'translateY(30px) scale(0.97)'
               }}
             />
           </div>
 
-          {/* Marketing Quote Section */}
+          {/* Marketing Quote Section - 移动端适配 */}
           <div className="max-w-5xl mx-auto px-4 mb-20">
-            <div className="bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-2xl p-8 backdrop-blur-sm border border-gray-800 relative overflow-hidden">
+            <div className="bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-2xl p-4 md:p-8 backdrop-blur-sm border border-gray-800 relative overflow-hidden">
               <div className="absolute inset-0">
                 <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.05)_50%,transparent_75%)] bg-[length:300%_100%]" />
               </div>
-              <div className="space-y-12 relative">
-                {/* 第一组对话 */}
+              <div className="space-y-8 md:space-y-12 relative">
+                {/* 对话部分 - 适配移动端 */}
                 <div className="space-y-6">
-                  <div className="flex items-start gap-4 opacity-0 animate-fade-slide-in message-bubble pua group" style={{ animationDelay: '0.2s' }}>
-                    <div className="w-8 h-8 rounded-full bg-gray-800 flex-shrink-0 flex items-center justify-center avatar">
-                      <span className="text-gray-400 text-sm">旁人</span>
+                  <div className="flex items-start gap-3 md:gap-4 opacity-0 animate-fade-slide-in message-bubble pua group" style={{ animationDelay: '0.2s' }}>
+                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-800 flex-shrink-0 flex items-center justify-center avatar">
+                      <span className="text-gray-400 text-xs md:text-sm">旁人</span>
                     </div>
                     <div className="flex-1">
-                      <div className="bg-gray-800/50 rounded-2xl rounded-tl-none p-4 text-gray-300 shadow-lg relative">
+                      <div className="bg-gray-800/50 rounded-2xl rounded-tl-none p-3 md:p-4 text-gray-300 shadow-lg relative">
                         <div className="absolute inset-0 rounded-2xl rounded-tl-none bg-gradient-to-r from-gray-400/0 via-gray-400/5 to-gray-400/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="relative">
+                        <div className="relative text-sm md:text-base">
                           事情已经过去了，你为什么还揪着不放呢？
                         </div>
                       </div>
@@ -895,20 +895,20 @@ function App() {
               }
             }} className="space-y-8">
               <div className="space-y-6 bg-gray-900/50 p-8 rounded-xl border border-gray-800 text-center">
-                {/* 谁PUA你？ */}
+                {/* 谁PUA你？ - 移动端适配 */}
                 <div className="space-y-3">
                   <label className="block text-lg font-medium text-gray-200">谁PUA你？（可多选）</label>
-                  <div className="flex justify-center gap-8">
+                  <div className="flex flex-wrap justify-center gap-3 md:gap-8">
                     {['上司', '同事', '下属', '客户'].map((option) => (
                       <button
                         key={option}
                         type="button"
                         onClick={() => handleOptionSelect('perpetrator', option)}
-                        className={`w-40 px-6 py-3 rounded-full border-2 ${
+                        className={`w-auto px-4 md:w-40 md:px-6 py-3 rounded-full border-2 ${
                           formData.perpetrator.includes(option)
                             ? 'border-blue-400 text-blue-400 bg-blue-400/10' 
                             : 'border-gray-700 text-gray-300 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10'
-                        } transition-all duration-200 text-base font-medium`}
+                        } transition-all duration-200 text-sm md:text-base font-medium`}
                       >
                         {option}
                       </button>
@@ -916,20 +916,20 @@ function App() {
                   </div>
                 </div>
 
-                {/* PUA类别 */}
+                {/* PUA类别 - 移动端适配 */}
                 <div className="space-y-3">
                   <label className="block text-lg font-medium text-gray-200">PUA类别（可多选）</label>
-                  <div className="flex flex-wrap justify-center gap-6">
+                  <div className="flex flex-wrap justify-center gap-3 md:gap-6">
                     {['工作成果', '人身攻击', '性骚扰', '生命威胁', '其他(在下面描述中补充)'].map((option) => (
                       <button
                         key={option}
                         type="button"
                         onClick={() => handleOptionSelect('puaType', option)}
-                        className={`w-40 px-6 py-3 rounded-full border-2 ${
+                        className={`w-auto px-4 md:w-40 md:px-6 py-3 rounded-full border-2 ${
                           formData.puaType.includes(option)
                             ? 'border-blue-400 text-blue-400 bg-blue-400/10' 
                             : 'border-gray-700 text-gray-300 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10'
-                        } transition-all duration-200 text-base font-medium`}
+                        } transition-all duration-200 text-sm md:text-base font-medium`}
                       >
                         {option}
                       </button>
@@ -937,20 +937,20 @@ function App() {
                   </div>
                 </div>
 
-                {/* 创伤程度 */}
+                {/* 创伤程度 - 移动端适配 */}
                 <div className="space-y-3">
                   <label className="block text-lg font-medium text-gray-200">创伤程度（单选）</label>
-                  <div className="flex justify-center gap-8">
+                  <div className="flex flex-wrap justify-center gap-3 md:gap-8">
                     {['轻微', '中等', '严重'].map((option) => (
                       <button
                         key={option}
                         type="button"
                         onClick={() => handleOptionSelect('severity', option)}
-                        className={`w-40 px-6 py-3 rounded-full border-2 ${
+                        className={`w-auto px-4 md:w-40 md:px-6 py-3 rounded-full border-2 ${
                           formData.severity === option
                             ? 'border-blue-400 text-blue-400 bg-blue-400/10' 
                             : 'border-gray-700 text-gray-300 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10'
-                        } transition-all duration-200 text-base font-medium`}
+                        } transition-all duration-200 text-sm md:text-base font-medium`}
                       >
                         {option}
                       </button>

@@ -298,194 +298,311 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-gray-900 p-8 rounded-xl w-full max-w-md relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-200"
-        >
-          ×
-        </button>
-        
-        <h2 className="text-2xl font-medium mb-6 text-center">
-          {mode === 'login' ? '登录' : mode === 'register' ? '注册' : '修改密码'}
-        </h2>
-
-        {successMessage && (
-          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-center">
-            {successMessage}
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-center">
-            {error}
-          </div>
-        )}
-
-        <form 
-          className="mt-8 space-y-6" 
-          onSubmit={mode === 'register' ? handleRegister : isChangePasswordMode(mode) ? handleChangePassword : handleSubmit}
-        >
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="identifier" className="text-sm font-medium text-gray-300">
-                邮箱
-              </label>
-              <input
-                id="identifier"
-                type="email"
-                required
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400"
-                placeholder="请输入邮箱"
-                readOnly={isChangePasswordMode(defaultMode)}
-                disabled={isChangePasswordMode(defaultMode)}
-              />
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden border border-gray-800 shadow-2xl animate-scale-in">
+        <div className="p-6 md:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Shield className="w-6 h-6 text-blue-400" />
+              <h2 className="text-xl md:text-2xl font-semibold text-gray-100">
+                {mode === 'login' ? '欢迎回来' : mode === 'register' ? '创建账户' : '修改密码'}
+              </h2>
             </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
 
-            {(mode === 'register' || (mode === 'login' && !isCodeLogin)) && !isChangePasswordMode(mode) && (
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm">
+              {successMessage}
+            </div>
+          )}
+
+          {mode === 'login' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="password" className="text-sm font-medium text-gray-300">
-                  密码
-                </label>
-                <div className="mt-1 relative">
+                <label className="block text-sm font-medium text-gray-400 mb-1">电子邮箱</label>
+                <input
+                  type="email"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  className="w-full p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100"
+                  placeholder="请输入您的邮箱"
+                />
+              </div>
+
+              {!isCodeLogin ? (
+                <>
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-400 mb-1">密码</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100 pr-10"
+                        placeholder="请输入您的密码"
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <button
+                      type="button"
+                      onClick={() => setIsCodeLogin(true)}
+                      className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      使用验证码登录
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode('register')}
+                      className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      没有账户？注册
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">验证码</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        className="flex-1 p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100"
+                        placeholder="请输入验证码"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSendCode}
+                        disabled={loading || countdown > 0}
+                        className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors whitespace-nowrap text-sm"
+                      >
+                        {countdown > 0 ? `${countdown}秒后重试` : '获取验证码'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <button
+                      type="button"
+                      onClick={() => setIsCodeLogin(false)}
+                      className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      使用密码登录
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode('register')}
+                      className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      没有账户？注册
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full p-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors font-medium flex justify-center items-center"
+              >
+                {loading ? '登录中...' : '登录'}
+              </button>
+            </form>
+          )}
+
+          {mode === 'register' && (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">电子邮箱</label>
+                <input
+                  type="email"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  className="w-full p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100"
+                  placeholder="请输入您的邮箱"
+                />
+              </div>
+              
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-400 mb-1">密码</label>
+                <div className="relative">
                   <input
-                    id="password"
                     type={showPassword ? "text" : "password"}
-                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400"
-                    placeholder={mode === 'register' ? "请设置密码（至少6位）" : "请输入密码"}
-                    autoComplete={mode === 'register' ? "new-password" : "current-password"}
+                    className="w-full p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100 pr-10"
+                    placeholder="请设置密码（至少6位）"
                   />
                   <button
                     type="button"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                   >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
-            )}
-
-            {isChangePasswordMode(mode) && (
-              <div>
-                <label htmlFor="new-password" className="text-sm font-medium text-gray-300">
-                  新密码
-                </label>
-                <div className="mt-1 relative">
+              
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-400 mb-1">确认密码</label>
+                <div className="relative">
                   <input
-                    id="new-password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400"
-                    placeholder="请设置新密码（至少6位）"
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {(mode === 'register' || isChangePasswordMode(mode)) && (
-              <div>
-                <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300">
-                  {isChangePasswordMode(mode) ? '确认新密码' : '确认密码'}
-                </label>
-                <div className="mt-1 relative">
-                  <input
-                    id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
-                    required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400"
-                    placeholder={isChangePasswordMode(mode) ? "请再次输入新密码" : "请再次输入密码"}
-                    autoComplete="new-password"
+                    className="w-full p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100 pr-10"
+                    placeholder="请再次输入密码"
                   />
                   <button
                     type="button"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                   >
-                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
-            )}
-
-            {(mode === 'register' || isChangePasswordMode(mode) || isCodeLogin) && (
+              
               <div>
-                <label htmlFor="code" className="text-sm font-medium text-gray-300">
-                  验证码
-                </label>
-                <div className="mt-1 flex gap-2">
+                <label className="block text-sm font-medium text-gray-400 mb-1">验证码</label>
+                <div className="flex gap-2">
                   <input
-                    id="code"
                     type="text"
-                    required
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-400"
+                    className="flex-1 p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100"
                     placeholder="请输入验证码"
                   />
                   <button
                     type="button"
                     onClick={handleSendCode}
-                    disabled={loading || countdown > 0 || !identifier}
-                    className="px-4 py-2 bg-blue-400 text-black rounded-md hover:bg-blue-300 disabled:bg-gray-600 whitespace-nowrap"
+                    disabled={loading || countdown > 0}
+                    className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors whitespace-nowrap text-sm"
                   >
-                    {countdown > 0 ? `${countdown}s` : '发送验证码'}
+                    {countdown > 0 ? `${countdown}秒后重试` : '获取验证码'}
                   </button>
                 </div>
               </div>
-            )}
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading || ((mode === 'register' || isChangePasswordMode(mode)) && !codeSent)}
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-blue-400 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-600"
-            >
-              {loading ? '处理中...' : (mode === 'register' ? '注册' : isChangePasswordMode(mode) ? '修改密码' : '登录')}
-            </button>
-          </div>
-
-          {mode === 'login' && (
-            <div className="text-center">
+              
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+                >
+                  已有账户？登录
+                </button>
+              </div>
+              
               <button
-                type="button"
-                onClick={() => setIsCodeLogin(!isCodeLogin)}
-                className="text-sm text-gray-400 hover:text-gray-300"
+                type="submit"
+                disabled={loading}
+                className="w-full p-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors font-medium flex justify-center items-center"
               >
-                {isCodeLogin ? '密码登录' : '忘记密码？验证码登录'}
+                {loading ? '注册中...' : '注册'}
               </button>
-            </div>
+            </form>
           )}
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={goToLoginOrRegister}
-              className="text-blue-400 hover:text-blue-300 text-sm"
-            >
-              {mode === 'register' ? '已有账号？去登录 →' : isChangePasswordMode(mode) ? '取消' : '没有账号？去注册 →'}
-            </button>
-          </div>
-        </form>
+          {mode === 'changePassword' && (
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="text-gray-400 text-sm mb-4">
+                {userEmail ? `您正在修改账户 ${userEmail} 的密码` : '请填写以下信息修改密码'}
+              </div>
+              
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-400 mb-1">新密码</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100 pr-10"
+                    placeholder="请设置新密码（至少6位）"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-400 mb-1">确认新密码</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100 pr-10"
+                    placeholder="请再次输入新密码"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">验证码</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="flex-1 p-3 bg-gray-800/70 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-100"
+                    placeholder="请输入验证码"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={loading || countdown > 0}
+                    className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors whitespace-nowrap text-sm"
+                  >
+                    {countdown > 0 ? `${countdown}秒后重试` : '获取验证码'}
+                  </button>
+                </div>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full p-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors font-medium flex justify-center items-center"
+              >
+                {loading ? '提交中...' : '修改密码'}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

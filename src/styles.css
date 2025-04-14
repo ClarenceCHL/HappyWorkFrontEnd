@@ -261,4 +261,61 @@
 
 .nav-expand {
   animation: navExpand 0.3s ease-out forwards;
+}
+
+/* 添加移动端适配相关样式 */
+@media (max-width: 768px) {
+  .dialogue-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .typing-dot {
+    width: 5px;
+    height: 5px;
+    margin: 0 2px;
+    border-radius: 50%;
+    display: inline-block;
+    animation: typingDots 1s infinite;
+  }
+  
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  
+  .message-bubble {
+    max-width: 100%;
+  }
+}
+
+/* 统一移动端响应式设计样式 */
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  margin: 0 3px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: typingDots 1s infinite;
+}
+
+/* 改进移动端滚动体验 */
+@media (max-width: 768px) {
+  html, body {
+    overscroll-behavior-y: contain;
+  }
+  
+  textarea, input {
+    font-size: 16px; /* 避免iOS缩放 */
+  }
+}
+
+/* 移动端输入优化 */
+.resize-textarea {
+  resize: none;
+  min-height: 40px;
+  transition: height 0.1s ease;
 } 
