@@ -678,7 +678,7 @@ function App() {
                 transform: 'translateY(30px)'
               }}
             >
-              为被职场PUA的人提供AI驱动的情绪发泄与解决方案
+              为职场人提供AI驱动的情绪发泄与解决方案
             </p>
           </header>
 
