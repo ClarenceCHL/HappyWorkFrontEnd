@@ -74,7 +74,10 @@ function App() {
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [error, setError] = useState<string>('');
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => {
+    // 从localStorage读取令牌
+    return localStorage.getItem('userToken');
+  });
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'changePassword'>('login');
@@ -475,6 +478,16 @@ function App() {
     }
   };
 
+  // 更新setToken函数，同时更新localStorage
+  const handleSetToken = (newToken: string | null) => {
+    if (newToken) {
+      localStorage.setItem('userToken', newToken);
+    } else {
+      localStorage.removeItem('userToken');
+    }
+    setToken(newToken);
+  };
+
   return (
     <div className="min-h-screen bg-[#111111] text-gray-100">
       {error && (
@@ -499,7 +512,7 @@ function App() {
       {showAuth ? (
         <Auth 
           onSuccess={(token) => {
-            setToken(token);
+            handleSetToken(token);
             setShowAuth(false);
             setSuccessMessage('登录成功！');
             setShowSuccessToast(true);
@@ -605,7 +618,7 @@ function App() {
                         修改密码
                       </button>
                       <button 
-                        onClick={() => setToken(null)} 
+                        onClick={() => handleSetToken(null)} 
                         className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-sm`}
                       >
                         <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
