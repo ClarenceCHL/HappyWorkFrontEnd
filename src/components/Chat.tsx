@@ -27,6 +27,7 @@ interface FormData {
   description: string;
   perpetrator: string[];
   images?: File[];
+  mode?: 'simulation' | 'solution';
 }
 
 interface UploadedImage {
@@ -59,6 +60,8 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
   });
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [newChatImages, setNewChatImages] = useState<UploadedImage[]>([]);
+  // 添加模式选择状态
+  const [newChatMode, setNewChatMode] = useState<'simulation' | 'solution'>('solution');
   // 添加打字机效果状态
   const [animatedMessages, setAnimatedMessages] = useState<{[key: number]: string}>({});
   const [animationComplete, setAnimationComplete] = useState<{[key: number]: boolean}>({});
@@ -317,12 +320,6 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
             <div className="flex flex-col items-center justify-center h-full text-gray-500 py-12">
               <Clock className="w-12 h-12 mb-4 opacity-50" />
               <p>没有历史对话</p>
-              <button
-                onClick={() => setShowNewChat(true)}
-                className="mt-4 px-4 py-2 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors"
-              >
-                开始新对话
-              </button>
             </div>
           )}
         </div>
@@ -368,7 +365,8 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
                   }
                   const formWithImages = {
                     ...newChatForm,
-                    images: newChatImages.map(img => img.file)
+                    images: newChatImages.map(img => img.file),
+                    mode: newChatMode  // 添加mode参数
                   };
                   onNewChat(formWithImages);
                   setShowNewChat(false);
@@ -468,6 +466,42 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
                       placeholder="请详细描述您遭遇了什么..."
                       className="w-full h-32 p-4 rounded-xl bg-gray-800/50 border border-gray-700 focus:border-blue-400 outline-none resize-none text-gray-100 placeholder-gray-500"
                     />
+                    
+                    {/* 添加模式选择选项 */}
+                    <div className="mt-4 space-y-3">
+                      <label className="block text-base font-medium text-gray-200">选择回复模式</label>
+                      <div className="flex gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setNewChatMode('simulation')}
+                          className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                            newChatMode === 'simulation' 
+                              ? 'bg-purple-500/20 text-purple-400 border border-purple-400' 
+                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-purple-400'
+                          }`}
+                        >
+                          <span className="w-4 h-4 rounded-full flex items-center justify-center border-2 border-current">
+                            {newChatMode === 'simulation' && <span className="w-2 h-2 bg-current rounded-full"></span>}
+                          </span>
+                          <span>场景模拟</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewChatMode('solution')}
+                          className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${
+                            newChatMode === 'solution' 
+                              ? 'bg-green-500/20 text-green-400 border border-green-400' 
+                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-green-400'
+                          }`}
+                        >
+                          <span className="w-4 h-4 rounded-full flex items-center justify-center border-2 border-current">
+                            {newChatMode === 'solution' && <span className="w-2 h-2 bg-current rounded-full"></span>}
+                          </span>
+                          <span>回复话术</span>
+                        </button>
+                      </div>
+                    </div>
+                    
                     <div className="mt-2 flex items-center justify-between">
                       <input
                         type="file"

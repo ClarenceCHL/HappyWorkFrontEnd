@@ -29,6 +29,7 @@ interface FormData {
   severity: string;
   description: string;
   perpetrator: string[];
+  mode?: 'simulation' | 'solution';
 }
 
 interface Message {
@@ -427,7 +428,7 @@ function App() {
   // 修改创建新对话的代码
   const createNewChat = async (formData: FormData, initialMessage: Message) => {
     try {
-      console.log('创建新对话，模式:', submitMode);  // 添加日志
+      console.log('创建新对话，模式:', formData.mode);  // 更新日志
       const response = await fetch(`${API_URL}`, {
         method: 'POST',
         headers: {
@@ -437,8 +438,8 @@ function App() {
         body: JSON.stringify({
           ...formData,
           images: initialMessage.images,
-          mode: submitMode,  // 确保mode参数被正确传递
-          type: submitMode   // 添加type参数
+          mode: formData.mode || submitMode,  // 优先使用formData中的mode
+          type: formData.mode || submitMode   // 添加type参数
         }),
       });
 
@@ -458,10 +459,10 @@ function App() {
         // 添加到聊天历史
         const newChat: ChatHistory = {
           id: Date.now().toString(),
-          title: `${submitMode === 'simulation' ? '场景模拟' : '回复话术'} - ${formData.puaType.join(', ')}`,
+          title: `${formData.mode === 'simulation' ? '场景模拟' : '回复话术'} - ${formData.puaType.join(', ')}`,
           preview: data.advice,
           timestamp: new Date(),
-          type: submitMode || 'solution',  // 保存对话类型
+          type: formData.mode || 'solution',  // 保存对话类型
           messages: [initialMessage, assistantMessage]
         };
         setChatHistory(prev => [newChat, ...prev]);
@@ -543,6 +544,8 @@ function App() {
             setIsTyping(true);
             
             try {
+              // 使用formData中的mode参数
+              setSubmitMode(formData.mode || 'solution');
               await createNewChat(formData, initialMessage);
             } catch (err) {
               setError('网络错误，请检查后端服务是否运行');
@@ -990,6 +993,7 @@ function App() {
                       placeholder="请详细描述或上传图片，告诉我您遭遇了什么，您不值得被这样对待"
                       className="w-full h-32 p-6 rounded-xl bg-gray-800/50 border border-gray-700 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none resize-none text-gray-100 placeholder-gray-500 text-base"
                     />
+                    
                     <div className="absolute bottom-4 right-4 flex gap-3">
                       <button
                         type="button"
