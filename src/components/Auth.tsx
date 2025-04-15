@@ -21,7 +21,6 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [codeSent, setCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [mode, setMode] = useState<'login' | 'register' | 'changePassword'>(defaultMode);
   const [isCodeLogin, setIsCodeLogin] = useState(false);
@@ -61,7 +60,6 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
       const data = await response.json();
 
       if (data.status === 'success') {
-        setCodeSent(true);
         setCountdown(60);
         const timer = setInterval(() => {
           setCountdown((prev) => {
@@ -205,7 +203,6 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
         setPassword('');
         setConfirmPassword('');
         setCode('');
-        setCodeSent(false);
         setTimeout(() => {
           setSuccessMessage('');
           setMode('login');
@@ -271,7 +268,6 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
         setPassword('');
         setConfirmPassword('');
         setCode('');
-        setCodeSent(false);
         setTimeout(() => {
           setSuccessMessage('');
           onClose();
@@ -284,19 +280,6 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
     } finally {
       setLoading(false);
     }
-  };
-
-  const goToLoginOrRegister = () => {
-    if ((mode as string) === 'register' || (mode as string) === 'changePassword') {
-      setMode('login');
-    } else {
-      setMode('register');
-    }
-    setError('');
-    setCode('');
-    setPassword('');
-    setConfirmPassword('');
-    setCodeSent(false);
   };
 
   return (
