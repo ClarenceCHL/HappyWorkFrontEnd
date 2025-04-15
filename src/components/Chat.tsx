@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Send, Plus, Image as ImageIcon, X, Clock, MessageSquare } from 'lucide-react';
 
-interface Message {
+export interface Message {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
@@ -47,9 +48,11 @@ interface ChatProps {
   setIsTyping: React.Dispatch<React.SetStateAction<boolean>>;
   submitMode: 'simulation' | 'solution' | null;
   currentChatId?: string | null;
+  setCurrentMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  setCurrentChatId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSelectChat, isTyping, onNewChat, setIsTyping, submitMode, currentChatId }: ChatProps) {
+export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSelectChat, isTyping, onNewChat, setIsTyping, submitMode, currentChatId, setCurrentMessages, setCurrentChatId }: ChatProps) {
   const [message, setMessage] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
   const [newChatForm, setNewChatForm] = useState<FormData>({
@@ -252,7 +255,7 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
       {/* 侧边栏 - 添加移动端适配 */}
       <div 
         ref={sidebarRef}
-        className={`w-full md:w-80 border-r border-gray-800 flex-shrink-0 transition-all duration-500 ease-out ${showNewChat ? 'hidden md:block' : 'block'}`}
+        className={`w-full md:w-80 border-r border-gray-800 flex-shrink-0 transition-all duration-500 ease-out ${showNewChat ? 'hidden md:block' : 'block md:block'} ${currentMessages.length > 0 && !showNewChat ? 'hidden md:block' : 'block'}`}
         style={{ opacity: 0, transform: 'translateX(-30px)' }}
       >
         {/* 移动端返回按钮 - 仅在小屏幕显示 */}
@@ -264,12 +267,22 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
             <ArrowLeft className="w-5 h-5 mr-2" />
             <span>返回主页</span>
           </button>
-          <button
-            onClick={() => setShowNewChat(true)}
-            className="bg-blue-500 text-white p-2 rounded-full"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            {currentMessages.length > 0 && (
+              <button
+                onClick={() => setShowNewChat(false)}
+                className="bg-blue-500 text-white p-2 rounded-full"
+              >
+                <MessageSquare className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={() => setShowNewChat(true)}
+              className="bg-blue-500 text-white p-2 rounded-full"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="p-4 flex justify-between items-center border-b border-gray-800">
@@ -328,18 +341,30 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
       {/* 主聊天区域 - 添加移动端适配 */}
       <div 
         ref={mainChatRef}
-        className={`flex-1 flex flex-col h-full transition-all duration-500 ease-out ${showNewChat ? 'block' : 'hidden md:flex'}`}
+        className={`flex-1 flex flex-col h-full transition-all duration-500 ease-out ${
+          showNewChat ? 'block' : (currentMessages.length > 0 ? 'block md:flex' : 'hidden md:flex')
+        }`}
         style={{ opacity: 0, transform: 'translateX(30px)' }}
       >
         {/* 页头 */}
         <div className="border-b border-gray-800 p-4 flex items-center justify-between">
           <div className="flex items-center">
             <button 
-              onClick={() => showNewChat ? setShowNewChat(false) : onBack()}
+              onClick={() => {
+                if (showNewChat) {
+                  setShowNewChat(false);
+                } else if (currentMessages.length > 0 && window.innerWidth < 768) {
+                  // 在移动端，返回到历史对话列表
+                  setCurrentMessages([]);
+                  setCurrentChatId(null);
+                } else {
+                  onBack();
+                }
+              }}
               className="flex items-center text-gray-400 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
-              <span>返回{showNewChat ? '聊天' : '主页'}</span>
+              <span>返回{showNewChat ? '聊天' : (currentMessages.length > 0 && window.innerWidth < 768 ? '历史' : '主页')}</span>
             </button>
           </div>
           <div className="text-sm">
@@ -651,37 +676,36 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
                               handleSubmit(e);
                             }
                           }}
-                          onInput={(e) => {
-                            const target = e.target as HTMLTextAreaElement;
-                            target.style.height = 'auto';
-                            target.style.height = Math.min(target.scrollHeight, 128) + 'px';
-                          }}
                         />
-                        <div className="px-2 pb-2 flex justify-between">
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleImageUpload}
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="text-gray-400 hover:text-gray-300"
-                          >
-                            <ImageIcon className="w-5 h-5" />
-                          </button>
-                        </div>
                       </div>
-                      <button
-                        type="submit"
-                        disabled={isTyping || (!message.trim() && !uploadedImages.length)}
-                        className="bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleImageUpload}
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-2 bg-gray-800 text-gray-400 hover:text-white rounded-full"
+                        >
+                          <ImageIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="submit"
+                          className={`p-2.5 rounded-full ${
+                            message.trim() || uploadedImages.length > 0
+                              ? 'bg-blue-500 text-white hover:bg-blue-600'
+                              : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                          }`}
+                          disabled={!message.trim() && uploadedImages.length === 0}
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </form>

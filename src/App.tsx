@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Shield, AlertTriangle, History, Image as ImageIcon, X, PlayCircle, MessageCircle, LogOut, Key } from 'lucide-react';
 import { Auth } from './components/Auth';
 import { Features } from './components/Features';
-import { Chat } from './components/Chat';
+import { Chat, Message as ChatMessage } from './components/Chat';
 import heroImage from './assets/hero-image.png';
 import './styles.css';
 
@@ -32,16 +32,8 @@ interface FormData {
   mode?: 'simulation' | 'solution';
 }
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  images?: Array<{
-    id: string;
-    url: string;
-  }>;
-}
+// 使用从Chat组件导入的Message类型
+type Message = ChatMessage;
 
 interface UploadedImage {
   id: string;
@@ -110,7 +102,8 @@ function App() {
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // 添加passive选项，提高性能
+    document.addEventListener('mousedown', handleClickOutside, { passive: true });
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -130,7 +123,8 @@ function App() {
       setScrollY(window.scrollY);
     };
     
-    window.addEventListener('scroll', handleScroll);
+    // 修改为被动模式，提高滚动性能
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -541,6 +535,8 @@ function App() {
           onSelectChat={handleSelectChat}
           isTyping={isTyping}
           setIsTyping={setIsTyping}
+          setCurrentMessages={setCurrentMessages}
+          setCurrentChatId={setCurrentChatId}
           onNewChat={async (formData) => {
             const initialMessage: Message = {
               id: Date.now().toString(),
