@@ -59,6 +59,8 @@ interface Chat {
   timestamp: Date;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 function App() {
   const [formData, setFormData] = useState<FormData>({
     puaType: [],
@@ -187,7 +189,7 @@ function App() {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:8000/user/info', {
+      const response = await fetch(`${API_URL}/user/info`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -338,7 +340,7 @@ function App() {
       
       console.log('发送消息，使用模式:', mode);  // 添加日志
       
-      const response = await fetch('http://localhost:8000/chat/message', {
+      const response = await fetch(`${API_URL}/chat/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -396,7 +398,7 @@ function App() {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:8000/chat/history', {
+      const response = await fetch(`${API_URL}/chat/history`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -426,7 +428,7 @@ function App() {
   const createNewChat = async (formData: FormData, initialMessage: Message) => {
     try {
       console.log('创建新对话，模式:', submitMode);  // 添加日志
-      const response = await fetch('http://localhost:8000', {
+      const response = await fetch(`${API_URL}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

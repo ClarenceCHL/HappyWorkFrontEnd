@@ -12,6 +12,8 @@ interface AuthProps {
   token?: string | null;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, userEmail, token }) => {
   const [identifier, setIdentifier] = useState(isChangePasswordMode(defaultMode) && userEmail ? userEmail : '');
   const [password, setPassword] = useState('');
@@ -44,7 +46,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/send_code', {
+      const response = await fetch(`${API_URL}/send_code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -127,7 +129,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
         ? { identifier, code }
         : { identifier, password };
 
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +185,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/register', {
+      const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -253,7 +255,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch('http://localhost:8000/change_password', {
+      const response = await fetch(`${API_URL}/change_password`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
