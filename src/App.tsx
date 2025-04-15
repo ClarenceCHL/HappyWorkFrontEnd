@@ -568,20 +568,20 @@ function App() {
             <div 
               className={`max-w-5xl mx-auto transition-all duration-300 ease-in-out ${
                 scrollY > 100 
-                  ? 'mt-4 px-4 rounded-full bg-[#111111]/95 backdrop-blur-lg shadow-lg border border-gray-800/30 animate-nav-glow' 
-                  : 'mt-6 px-6'
+                  ? 'mt-2 sm:mt-4 px-2 sm:px-4 rounded-full bg-[#111111]/95 backdrop-blur-lg shadow-lg border border-gray-800/30 animate-nav-glow' 
+                  : 'mt-3 sm:mt-6 px-3 sm:px-6'
               }`}
               style={{
-                width: scrollY > 100 ? 'calc(100% - 2rem)' : '100%',
+                width: scrollY > 100 ? 'calc(100% - 1rem)' : '100%',
                 transform: scrollY > 100 ? 'scale(0.95)' : 'scale(1)'
               }}
             >
-              <div className="py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Shield className={`${scrollY > 100 ? 'w-5 h-5' : 'w-6 h-6'} text-blue-400 transition-all duration-300`} />
-                  <span className={`${scrollY > 100 ? 'text-base' : 'text-lg'} font-medium transition-all duration-300`}>Happy Work</span>
+              <div className="py-2 sm:py-4 flex items-center justify-between">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Shield className={`${scrollY > 100 ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-5 h-5 sm:w-6 sm:h-6'} text-blue-400 transition-all duration-300`} />
+                  <span className={`${scrollY > 100 ? 'text-sm sm:text-base' : 'text-base sm:text-lg'} font-medium transition-all duration-300`}>Happy Work</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   {token ? (
                     <>
                       <button 
@@ -594,16 +594,16 @@ function App() {
                           setShowAuth(true);
                           setAuthMode('changePassword');
                         }}
-                        className={`md:flex hidden items-center gap-1.5 px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-sm font-medium shadow-sm`}
+                        className={`md:flex hidden items-center gap-1.5 px-2 sm:px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-sm`}
                       >
-                        <Key className="w-4 h-4" />
+                        <Key className="w-3 h-3 sm:w-4 sm:h-4" />
                         修改密码
                       </button>
                       <button 
                         onClick={() => setToken(null)} 
-                        className={`flex items-center gap-1.5 px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-sm font-medium shadow-sm`}
+                        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-sm`}
                       >
-                        <LogOut className="w-4 h-4" />
+                        <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="md:inline hidden">退出登录</span>
                       </button>
                     </>
@@ -614,7 +614,7 @@ function App() {
                           setShowAuth(true);
                           setAuthMode('login');
                         }} 
-                        className="text-gray-400 hover:text-gray-200 transition-colors"
+                        className="text-xs sm:text-sm text-gray-400 hover:text-gray-200 transition-colors px-2 py-1"
                       >
                         登录
                       </button>
@@ -623,7 +623,7 @@ function App() {
                           setShowAuth(true);
                           setAuthMode('register');
                         }} 
-                        className={`bg-blue-400 text-black ${scrollY > 100 ? 'px-3 py-1.5' : 'px-4 py-2'} rounded-full font-medium hover:bg-blue-300 transition-all duration-300`}
+                        className={`bg-blue-400 text-black ${scrollY > 100 ? 'px-2 sm:px-3 py-1 sm:py-1.5' : 'px-3 sm:px-4 py-1.5 sm:py-2'} rounded-full font-medium hover:bg-blue-300 transition-all duration-300 text-xs sm:text-sm`}
                       >
                         注册
                       </button>
@@ -634,10 +634,10 @@ function App() {
             </div>
           </div>
 
-          {/* Update Banner - 添加动画效果 */}
+          {/* Update Banner - 添加动画和移动端适配 */}
           <div 
             ref={heroRef}
-            className="pt-20 pb-4 text-center"
+            className="pt-20 md:pt-28 pb-3 md:pb-4 text-center px-4"
             style={{ 
               opacity: 0,
               transform: 'translateY(30px)',
@@ -647,14 +647,14 @@ function App() {
           >
             <button 
               onClick={() => setShowFeatures(true)}
-              className="inline-flex items-center gap-2 px-6 py-2 rounded-full border border-blue-400/30 text-gray-300 hover:border-blue-400/50 transition-colors relative overflow-hidden group"
+              className="inline-flex flex-wrap justify-center sm:flex-nowrap items-center gap-1 sm:gap-2 px-3 sm:px-6 py-2 rounded-full border border-blue-400/30 text-gray-300 hover:border-blue-400/50 transition-colors relative overflow-hidden group mt-3 sm:mt-0"
             >
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.3)_50%,transparent_75%)] bg-[length:300%_100%]" />
                 <div className="absolute inset-0 animate-shimmer opacity-50 bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.1)_50%,transparent_75%)] bg-[length:300%_100%]" />
               </div>
-              <span className="relative z-10">匿名隐私，保驾护航，拒绝服从性测试</span>
-              <span className="relative z-10 text-blue-400">了解更多 →</span>
+              <span className="relative z-10 text-xs sm:text-sm md:text-base">匿名隐私，保驾护航，拒绝服从性测试</span>
+              <span className="relative z-10 text-blue-400 text-xs sm:text-sm md:text-base whitespace-nowrap ml-1">了解更多 →</span>
             </button>
           </div>
 
