@@ -1003,14 +1003,15 @@ function App() {
                       className="w-full h-32 p-6 rounded-xl bg-gray-800/50 border border-gray-700 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none resize-none text-gray-100 placeholder-gray-500 text-base"
                     />
                     
-                    <div className="absolute bottom-4 right-4 flex gap-3">
+                    {/* 将按钮移到输入框下方 */}
+                    <div className="flex justify-end mt-3 gap-3">
                       <button
                         type="button"
                         onClick={() => setShowChat(true)}
-                        className="bg-gray-600 hover:bg-gray-500 text-white rounded-full p-3 transition-colors duration-200"
+                        className="bg-gray-600 hover:bg-gray-500 text-white rounded-full p-2.5 transition-colors duration-200"
                         title="查看历史记录"
                       >
-                        <History className="w-6 h-6" />
+                        <History className="w-5 h-5" />
                       </button>
                       <input
                         type="file"
@@ -1023,21 +1024,21 @@ function App() {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="bg-gray-600 hover:bg-gray-500 text-white rounded-full p-3 transition-colors duration-200"
+                        className="bg-gray-600 hover:bg-gray-500 text-white rounded-full p-2.5 transition-colors duration-200"
                         title="上传图片"
                       >
-                        <ImageIcon className="w-6 h-6" />
+                        <ImageIcon className="w-5 h-5" />
                       </button>
                       <div className="relative" ref={menuRef}>
                         <button
                           type="button"
                           onClick={() => setShowSubmitMenu(!showSubmitMenu)}
                           disabled={(!formData.description.trim() && uploadedImages.length === 0) || isTyping}
-                          className={`bg-blue-400 hover:bg-blue-300 disabled:bg-gray-700 text-black rounded-full p-3 transition-all duration-200 relative group ${
+                          className={`bg-blue-400 hover:bg-blue-300 disabled:bg-gray-700 text-black rounded-full p-2.5 transition-all duration-200 relative group ${
                             showSubmitMenu ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-900' : ''
                           }`}
                         >
-                          <MessageSquare className={`w-6 h-6 ${showSubmitMenu ? 'animate-icon-pulse' : ''}`} />
+                          <MessageSquare className={`w-5 h-5 ${showSubmitMenu ? 'animate-icon-pulse' : ''}`} />
                           <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                             选择回复模式
                           </span>
