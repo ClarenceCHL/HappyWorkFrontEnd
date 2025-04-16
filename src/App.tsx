@@ -89,6 +89,37 @@ function App() {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const heroImageRef = useRef<HTMLImageElement>(null);
 
+  // 记忆化选项按钮组件，避免整个表单重新渲染
+  const OptionButton = React.memo(({ 
+    option, 
+    field, 
+    isSelected, 
+    onClick 
+  }: { 
+    option: string; 
+    field: keyof FormData; 
+    isSelected: boolean; 
+    onClick: () => void; 
+  }) => (
+    <button
+      type="button"
+      data-option={option}
+      data-field={field}
+      onClick={onClick}
+      className={`w-auto px-4 md:w-40 md:px-6 py-3 rounded-full border-2 ${
+        isSelected
+          ? 'border-blue-400 text-blue-400 bg-blue-400/10' 
+          : 'border-gray-700 text-gray-300 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10'
+      } transition-colors duration-50 text-sm md:text-base font-medium`}
+      aria-pressed={isSelected}
+    >
+      {option}
+    </button>
+  ), (prevProps, nextProps) => {
+    // 只有当选中状态发生变化时才重新渲染
+    return prevProps.isSelected === nextProps.isSelected;
+  });
+
   // 在切换页面时清理错误信息
   useEffect(() => {
     setError('');
@@ -203,41 +234,87 @@ function App() {
     }
   };
 
-  const handleOptionSelect = (field: keyof FormData, value: string) => {
-    setFormData(prev => {
-      if (field === 'severity') {
-        // 单选逻辑
-        return {
-          ...prev,
-          [field]: value
-        };
-      } else if (field === 'description') {
-        // 文本输入逻辑
-        return {
-          ...prev,
-          [field]: value
-        };
-      } else {
-        // 多选逻辑
-        const currentValues = prev[field] as string[];
-        const newValues = currentValues.includes(value)
-          ? currentValues.filter(v => v !== value)
-          : [...currentValues, value];
+  // 添加优化后的选项选择函数
+  const handleOptionSelect = React.useCallback((field: keyof FormData, value: string) => {
+    // 使用RAF (requestAnimationFrame) 延迟状态更新,但提供即时的视觉反馈
+    if (field === 'severity' || field === 'perpetrator' || field === 'puaType') {
+      // 获取当前按钮元素
+      const buttonSelector = `button[data-option="${value}"][data-field="${field}"]`;
+      const button = document.querySelector(buttonSelector) as HTMLButtonElement;
+      
+      if (button) {
+        // 立即应用视觉样式变化
+        const isCurrentlySelected = field === 'severity' 
+          ? formData[field] === value
+          : (formData[field] as string[]).includes(value);
         
-        return {
-          ...prev,
-          [field]: newValues
-        };
+        // 临时添加/移除选中效果
+        if (isCurrentlySelected) {
+          button.classList.remove('border-blue-400', 'text-blue-400', 'bg-blue-400/10');
+          button.classList.add('border-gray-700', 'text-gray-300');
+        } else {
+          button.classList.add('border-blue-400', 'text-blue-400', 'bg-blue-400/10');
+          button.classList.remove('border-gray-700', 'text-gray-300');
+        }
       }
+    }
+    
+    // 然后执行实际的状态更新
+    requestAnimationFrame(() => {
+      setFormData(prev => {
+        if (field === 'severity') {
+          // 单选逻辑，如果已选中则清除，否则设置新值
+          return {
+            ...prev,
+            [field]: prev[field] === value ? '' : value
+          };
+        } else if (field === 'description') {
+          // 文本输入逻辑
+          return {
+            ...prev,
+            [field]: value
+          };
+        } else {
+          // 多选逻辑 - 优化数组操作
+          const currentValues = prev[field] as string[];
+          const isSelected = currentValues.includes(value);
+          
+          // 直接使用展开操作符添加或使用filter移除，减少操作步骤
+          return {
+            ...prev,
+            [field]: isSelected 
+              ? currentValues.filter(v => v !== value)
+              : [...currentValues, value]
+          };
+        }
+      });
     });
-  };
+  }, [formData]);
 
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      description: e.target.value
-    }));
-  };
+  // 使用防抖函数处理表单描述更新，避免频繁状态更新
+  const handleDescriptionChange = React.useMemo(() => {
+    let timeoutId: number | null = null;
+    
+    return (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      // 立即更新UI显示值，但延迟更新状态
+      timeoutId = window.setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          description: value
+        }));
+        timeoutId = null;
+      }, 100); // 100ms防抖
+      
+      // 立即更新输入框值
+      e.target.value = value;
+    };
+  }, []);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -858,10 +935,12 @@ function App() {
                 <div className="text-center pt-8 opacity-0 animate-fade-slide-in" style={{ animationDelay: '4.5s' }}>
                   <p className="text-lg text-blue-400 font-medium mb-2 hover:scale-105 transition-transform">在这里，你的每一个感受都值得被倾听</p>
                   <p className="text-sm text-gray-400">不要让任何人否定你的情感</p>
-                  <div className="mt-4 inline-flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 typing-dot-1"></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 typing-dot-2"></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 typing-dot-3"></span>
+                  <div className="mt-4 flex justify-center">
+                    <div className="text-blue-400 animate-pulse-glow">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -914,18 +993,13 @@ function App() {
                   <label className="block text-lg font-medium text-gray-200">谁PUA你？（可多选）</label>
                   <div className="flex flex-wrap justify-center gap-3 md:gap-8">
                     {['上司', '同事', '下属', '客户'].map((option) => (
-                      <button
+                      <OptionButton
                         key={option}
-                        type="button"
+                        option={option}
+                        field="perpetrator"
+                        isSelected={formData.perpetrator.includes(option)}
                         onClick={() => handleOptionSelect('perpetrator', option)}
-                        className={`w-auto px-4 md:w-40 md:px-6 py-3 rounded-full border-2 ${
-                          formData.perpetrator.includes(option)
-                            ? 'border-blue-400 text-blue-400 bg-blue-400/10' 
-                            : 'border-gray-700 text-gray-300 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10'
-                        } transition-all duration-200 text-sm md:text-base font-medium`}
-                      >
-                        {option}
-                      </button>
+                      />
                     ))}
                   </div>
                 </div>
@@ -935,18 +1009,13 @@ function App() {
                   <label className="block text-lg font-medium text-gray-200">PUA类别（可多选）</label>
                   <div className="flex flex-wrap justify-center gap-3 md:gap-6">
                     {['工作成果', '人身攻击', '性骚扰', '生命威胁', '其他(在下面描述中补充)'].map((option) => (
-                      <button
+                      <OptionButton
                         key={option}
-                        type="button"
+                        option={option}
+                        field="puaType"
+                        isSelected={formData.puaType.includes(option)}
                         onClick={() => handleOptionSelect('puaType', option)}
-                        className={`w-auto px-4 md:w-40 md:px-6 py-3 rounded-full border-2 ${
-                          formData.puaType.includes(option)
-                            ? 'border-blue-400 text-blue-400 bg-blue-400/10' 
-                            : 'border-gray-700 text-gray-300 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10'
-                        } transition-all duration-200 text-sm md:text-base font-medium`}
-                      >
-                        {option}
-                      </button>
+                      />
                     ))}
                   </div>
                 </div>
@@ -956,18 +1025,13 @@ function App() {
                   <label className="block text-lg font-medium text-gray-200">创伤程度（单选）</label>
                   <div className="flex flex-wrap justify-center gap-3 md:gap-8">
                     {['轻微', '中等', '严重'].map((option) => (
-                      <button
+                      <OptionButton
                         key={option}
-                        type="button"
+                        option={option}
+                        field="severity"
+                        isSelected={formData.severity === option}
                         onClick={() => handleOptionSelect('severity', option)}
-                        className={`w-auto px-4 md:w-40 md:px-6 py-3 rounded-full border-2 ${
-                          formData.severity === option
-                            ? 'border-blue-400 text-blue-400 bg-blue-400/10' 
-                            : 'border-gray-700 text-gray-300 hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10'
-                        } transition-all duration-200 text-sm md:text-base font-medium`}
-                      >
-                        {option}
-                      </button>
+                      />
                     ))}
                   </div>
                 </div>
