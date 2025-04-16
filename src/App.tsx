@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Shield, AlertTriangle, History, Image as ImageIcon, X, PlayCircle, MessageCircle, LogOut, Key } from 'lucide-react';
+import { MessageSquare, Shield, AlertTriangle, History, Image as ImageIcon, X, PlayCircle, MessageCircle, LogOut, Key, Crown, Heart } from 'lucide-react';
 import { Auth } from './components/Auth';
-import { Features } from './components/Features';
 import { Chat, Message as ChatMessage } from './components/Chat';
 import heroImage from './assets/hero-image.png';
 import './styles.css';
@@ -54,6 +53,44 @@ interface Chat {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// 添加自定义 hook 用于滚动动画
+function useScrollAnimation() {
+  useEffect(() => {
+    const animateOnScroll = () => {
+      const elements = document.querySelectorAll('.scroll-animate');
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+            observer.unobserve(entry.target); // 动画触发后不再观察
+          }
+        });
+      }, {
+        threshold: 0.15, // 元素出现15%时触发
+        rootMargin: '0px 0px -100px 0px' // 在元素进入视口前100px触发
+      });
+      
+      elements.forEach(el => {
+        observer.observe(el);
+      });
+      
+      return () => {
+        elements.forEach(el => {
+          observer.unobserve(el);
+        });
+      };
+    };
+    
+    // 页面加载后开始观察
+    const timeout = setTimeout(animateOnScroll, 800); // 调整延迟，平衡初始动画和滚动动画
+    
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, []);
+}
+
 function App() {
   const [formData, setFormData] = useState<FormData>({
     puaType: [],
@@ -73,7 +110,6 @@ function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'changePassword'>('login');
-  const [showFeatures, setShowFeatures] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [showSubmitMenu, setShowSubmitMenu] = useState(false);
@@ -123,7 +159,7 @@ function App() {
   // 在切换页面时清理错误信息
   useEffect(() => {
     setError('');
-  }, [showChat, showAuth, showFeatures]);
+  }, [showChat, showAuth]);
 
   // 添加点击外部关闭下拉菜单的功能
   useEffect(() => {
@@ -161,19 +197,12 @@ function App() {
 
   // 页面加载时的动画
   useEffect(() => {
-    if (!showChat && !showAuth && !showFeatures) {
+    if (!showChat && !showAuth) {
       // 获取各元素引用
       const nav = navRef.current;
-      const hero = heroRef.current;
-      const title = titleRef.current;
-      const subtitle = subtitleRef.current;
-      const heroImage = heroImageRef.current;
       
       // 设置初始状态
       if (nav) nav.style.opacity = '0';
-      if (title) title.style.opacity = '0';
-      if (subtitle) subtitle.style.opacity = '0';
-      if (heroImage) heroImage.style.opacity = '0';
       
       // 依次执行动画
       setTimeout(() => {
@@ -183,35 +212,9 @@ function App() {
         }
       }, 300);
       
-      setTimeout(() => {
-        if (hero) {
-          hero.style.opacity = '1';
-          hero.style.transform = 'translateY(0)';
-        }
-      }, 600);
-      
-      setTimeout(() => {
-        if (title) {
-          title.style.opacity = '1';
-          title.style.transform = 'translateY(0)';
-        }
-      }, 900);
-      
-      setTimeout(() => {
-        if (subtitle) {
-          subtitle.style.opacity = '1';
-          subtitle.style.transform = 'translateY(0)';
-        }
-      }, 1200);
-      
-      setTimeout(() => {
-        if (heroImage) {
-          heroImage.style.opacity = '1';
-          heroImage.style.transform = 'translateY(0) scale(1)';
-        }
-      }, 1500);
+      // 不再处理其他元素的初始动画，由滚动动画接管
     }
-  }, [showChat, showAuth, showFeatures]);
+  }, [showChat, showAuth]);
 
   // 获取用户信息
   const fetchUserInfo = async () => {
@@ -563,6 +566,9 @@ function App() {
     setToken(newToken);
   };
 
+  // 激活滚动动画
+  useScrollAnimation();
+
   return (
     <div className="min-h-screen bg-[#111111] text-gray-100">
       {error && (
@@ -605,8 +611,6 @@ function App() {
           userEmail={userEmail}
           token={token}
         />
-      ) : showFeatures ? (
-        <Features onBack={() => setShowFeatures(false)} />
       ) : showChat ? (
         <Chat
           onBack={() => setShowChat(false)}
@@ -675,6 +679,30 @@ function App() {
                   <span className={`${scrollY > 100 ? 'text-sm sm:text-base' : 'text-base sm:text-lg'} font-medium transition-all duration-300`}>Happy Work</span>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
+                  {/* 导航按钮也添加滚动动画效果，但每个按钮有不同的延迟 */}
+                  <button 
+                    className={`hidden md:flex items-center gap-1.5 px-3 ${scrollY > 100 ? 'py-1 text-xs' : 'py-1.5 text-sm'} 
+                    bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-medium rounded-full 
+                    transition-all duration-300 shadow-[0_0_10px_rgba(251,191,36,0.5)] hover:shadow-[0_0_15px_rgba(251,191,36,0.7)] 
+                    hover:scale-105 group relative overflow-hidden animate-fadeIn animation-delay-300`}
+                  >
+                    {/* 光效背景 */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]" />
+                    </div>
+                    <Crown className={`${scrollY > 100 ? 'w-3 h-3' : 'w-4 h-4'} text-amber-800 group-hover:animate-pulse`} />
+                    <span className="relative z-10">专属会员服务</span>
+                    {/* 移动端显示的简化版本 */}
+                  </button>
+                  <button 
+                    className={`md:hidden flex items-center justify-center ${scrollY > 100 ? 'w-6 h-6' : 'w-7 h-7'} 
+                    bg-gradient-to-r from-amber-500 to-yellow-300 text-black rounded-full 
+                    transition-all duration-300 shadow-[0_0_10px_rgba(251,191,36,0.5)] hover:shadow-[0_0_15px_rgba(251,191,36,0.7)] 
+                    hover:scale-105`}
+                  >
+                    <Crown className="w-3 h-3 text-amber-800" />
+                  </button>
+                  
                   {token ? (
                     <>
                       <button 
@@ -687,14 +715,14 @@ function App() {
                           setShowAuth(true);
                           setAuthMode('changePassword');
                         }}
-                        className={`md:flex hidden items-center gap-1.5 px-2 sm:px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-sm`}
+                        className={`md:flex hidden items-center gap-1.5 px-2 sm:px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-sm animate-fadeIn animation-delay-400`}
                       >
                         <Key className="w-3 h-3 sm:w-4 sm:h-4" />
                         修改密码
                       </button>
                       <button 
                         onClick={() => handleSetToken(null)} 
-                        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-sm`}
+                        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 ${scrollY > 100 ? 'py-1' : 'py-1.5'} bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-sm animate-fadeIn animation-delay-500`}
                       >
                         <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="md:inline hidden">退出登录</span>
@@ -707,7 +735,7 @@ function App() {
                           setShowAuth(true);
                           setAuthMode('login');
                         }} 
-                        className="text-xs sm:text-sm text-gray-400 hover:text-gray-200 transition-colors px-2 py-1"
+                        className="text-xs sm:text-sm text-gray-400 hover:text-gray-200 transition-colors px-2 py-1 animate-fadeIn animation-delay-400"
                       >
                         登录
                       </button>
@@ -716,7 +744,7 @@ function App() {
                           setShowAuth(true);
                           setAuthMode('register');
                         }} 
-                        className={`bg-blue-400 text-black ${scrollY > 100 ? 'px-2 sm:px-3 py-1 sm:py-1.5' : 'px-3 sm:px-4 py-1.5 sm:py-2'} rounded-full font-medium hover:bg-blue-300 transition-all duration-300 text-xs sm:text-sm`}
+                        className={`bg-blue-400 text-black ${scrollY > 100 ? 'px-2 sm:px-3 py-1 sm:py-1.5' : 'px-3 sm:px-4 py-1.5 sm:py-2'} rounded-full font-medium hover:bg-blue-300 transition-all duration-300 text-xs sm:text-sm animate-fadeIn animation-delay-500`}
                       >
                         注册
                       </button>
@@ -727,37 +755,33 @@ function App() {
             </div>
           </div>
 
-          {/* Update Banner - 添加动画和移动端适配 */}
+          {/* 健康提示横幅 */}
           <div 
             ref={heroRef}
-            className="pt-20 md:pt-28 pb-3 md:pb-4 text-center px-4"
+            className="pt-20 md:pt-28 pb-3 md:pb-4 text-center px-4 scroll-animate"
             style={{ 
               opacity: 0,
               transform: 'translateY(30px)',
-              transition: 'all 0.7s ease-out',
-              transitionDelay: '0.6s'
+              transition: 'all 0.7s ease-out'
             }}
           >
-            <button 
-              onClick={() => setShowFeatures(true)}
+            <div 
               className="inline-flex flex-wrap justify-center sm:flex-nowrap items-center gap-1 sm:gap-2 px-3 sm:px-6 py-2 rounded-full border border-blue-400/30 text-gray-300 hover:border-blue-400/50 transition-colors relative overflow-hidden group mt-3 sm:mt-0"
             >
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.3)_50%,transparent_75%)] bg-[length:300%_100%]" />
                 <div className="absolute inset-0 animate-shimmer opacity-50 bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.1)_50%,transparent_75%)] bg-[length:300%_100%]" />
               </div>
-              <span className="relative z-10 text-xs sm:text-sm md:text-base">匿名隐私，保驾护航，拒绝服从性测试</span>
-              <span className="relative z-10 text-blue-400 text-xs sm:text-sm md:text-base whitespace-nowrap ml-1">了解更多 →</span>
-            </button>
+              <span className="relative z-10 text-xs sm:text-sm md:text-base">最新更新：会员付费功能开发中，敬请期待</span>
+            </div>
           </div>
 
-          {/* Hero Section - 添加移动端适配 */}
+          {/* Hero Section */}
           <header className="pt-12 pb-8 px-4 text-center">
             <h1 
               ref={titleRef}
-              className="text-4xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-gray-200 to-gray-400 text-transparent bg-clip-text transition-all duration-700 ease-out"
+              className="text-4xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-gray-200 to-gray-400 text-transparent bg-clip-text scroll-animate opacity-0 translate-y-[30px] transition-all duration-700 ease-out"
               style={{ 
-                opacity: 0,
                 transform: 'translateY(30px)'
               }}
             >
@@ -765,9 +789,8 @@ function App() {
             </h1>
             <p 
               ref={subtitleRef}
-              className="text-lg md:text-2xl text-gray-400 mb-12 transition-all duration-700 ease-out"
+              className="text-lg md:text-2xl text-gray-400 mb-12 scroll-animate opacity-0 translate-y-[30px] transition-all duration-700 ease-out delay-[300ms]"
               style={{ 
-                opacity: 0,
                 transform: 'translateY(30px)'
               }}
             >
@@ -775,176 +798,206 @@ function App() {
             </p>
           </header>
 
-          {/* Hero Image - 添加移动端适配 */}
+          {/* Hero Image */}
           <div className="max-w-5xl mx-auto px-4 mb-12">
             <img 
               ref={heroImageRef}
               src={heroImage}
               alt="hero"
-              className="w-full rounded-xl transition-all duration-1000 ease-out"
+              className="w-full rounded-xl scroll-animate opacity-0 scale-95 translate-y-[30px] transition-all duration-1000 ease-out delay-[400ms]"
               style={{ 
-                opacity: 0, 
                 transform: 'translateY(30px) scale(0.97)'
               }}
             />
           </div>
 
-          {/* Marketing Quote Section - 移动端适配 */}
+          {/* 新增：产品核心功能介绍区块 */}
           <div className="max-w-5xl mx-auto px-4 mb-20">
-            <div className="bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-2xl p-4 md:p-8 backdrop-blur-sm border border-gray-800 relative overflow-hidden">
-              <div className="absolute inset-0">
-                <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.05)_50%,transparent_75%)] bg-[length:300%_100%]" />
+            <div className="text-center mb-10 scroll-animate opacity-0 translate-y-10 transition-all duration-1000 ease-out">
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-300 to-blue-500 text-transparent bg-clip-text inline-block">
+                核心功能
+              </h2>
+              <div className="w-24 h-1 bg-gradient-to-r from-blue-400 to-blue-300 mx-auto mt-4 rounded-full"></div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* 功能1：PUA场景高度模拟还原 */}
+              <div className="relative group scroll-animate opacity-0 translate-x-[-50px] transition-all duration-700 ease-out">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-blue-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full transform transition-transform group-hover:scale-[1.01] group-hover:border-blue-500/30 overflow-hidden">
+                  {/* 背景装饰 */}
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-full blur-3xl -mr-20 -mt-20"></div>
+                  
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 mb-6">
+                    <Heart className="w-8 h-8 text-blue-400" />
+                  </div>
+                  
+                  <h3 className="text-xl md:text-2xl font-bold text-blue-300 mb-4">PUA场景高度模拟还原</h3>
+                  
+                  <p className="text-gray-400 mb-4">
+                    通过您的选择、详细描述（上传图片），高度模拟还原PUA场景，让您在加密、脱敏、匿名的环境中发泄情绪。
+                  </p>
+                  
+                  <ul className="space-y-3 text-gray-400 mb-8">
+                    <li className="flex items-start">
+                      <span className="text-blue-400 mr-2">✓</span>
+                      适合心存创伤却在现实职场中无力反抗的职场人
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-400 mr-2">✓</span>
+                      适合曾经遭遇但已翻篇却希望防范于未然的职场人
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-400 mr-2">✓</span>
+                      适合初入职场焦虑害怕又想提前了解职场PUA的新人
+                    </li>
+                  </ul>
+                </div>
               </div>
-              <div className="space-y-8 md:space-y-12 relative">
-                {/* 对话部分 - 适配移动端 */}
-                <div className="space-y-6">
-                  <div className="flex items-start gap-3 md:gap-4 opacity-0 animate-fade-slide-in message-bubble pua group" style={{ animationDelay: '0.2s' }}>
-                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-800 flex-shrink-0 flex items-center justify-center avatar">
-                      <span className="text-gray-400 text-xs md:text-sm">旁人</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="bg-gray-800/50 rounded-2xl rounded-tl-none p-3 md:p-4 text-gray-300 shadow-lg relative">
-                        <div className="absolute inset-0 rounded-2xl rounded-tl-none bg-gradient-to-r from-gray-400/0 via-gray-400/5 to-gray-400/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="relative text-sm md:text-base">
-                          事情已经过去了，你为什么还揪着不放呢？
-                        </div>
-                      </div>
-                    </div>
+              
+              {/* 功能2：职场PUA现实解决方案 */}
+              <div className="relative group scroll-animate opacity-0 translate-x-[50px] transition-all duration-700 ease-out">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-blue-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full transform transition-transform group-hover:scale-[1.01] group-hover:border-blue-500/30 overflow-hidden">
+                  {/* 背景装饰 */}
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-full blur-3xl -mr-20 -mt-20"></div>
+                  
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 mb-6">
+                    <PlayCircle className="w-8 h-8 text-blue-400" />
                   </div>
+                  
+                  <h3 className="text-xl md:text-2xl font-bold text-blue-300 mb-4">职场PUA现实解决方案</h3>
+                  
+                  <p className="text-gray-400 mb-4">
+                    通过您提供的信息，结合您的情况，给出最符合您切身利益的反PUA解决方案。
+                  </p>
+                  
+                  <ul className="space-y-3 text-gray-400 mb-8">
+                    <li className="flex items-start">
+                      <span className="text-blue-400 mr-2">✓</span>
+                      基于您的情境给出最适合的应对思路
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-400 mr-2">✓</span>
+                      提供专业的话术技巧，助您快速有效回应PUA行为
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-400 mr-2">✓</span>
+                      站在您的立场，为您从长远发展上提供最优战略规划
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                  <div className="flex items-start gap-4 justify-end opacity-0 animate-fade-slide-in message-bubble victim group" style={{ animationDelay: '1.2s' }}>
-                    <div className="flex-1">
-                      <div className="bg-blue-500/10 rounded-2xl rounded-tr-none p-4 text-gray-200 leading-relaxed shadow-lg relative">
-                        <div className="absolute inset-0 rounded-2xl rounded-tr-none bg-gradient-to-r from-blue-400/0 via-blue-400/5 to-blue-400/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="relative">
-                          <p className="mb-2">有些事情对别人来说是过去了，对我来说却没有，</p>
-                          <p className="mb-2">因为受委屈的是我，而不是其他人。</p>
-                          <p className="text-blue-400 font-medium">除了我自己能谈原谅二字，谁也不能劝我大度。</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-400/30 flex-shrink-0 flex items-center justify-center avatar animate-pulse-glow">
-                      <span className="text-blue-400 text-sm">我</span>
-                    </div>
+          {/* 专属会员服务板块 - 添加在Marketing Quote Section和Main Chat Interface之间 */}
+          <div className="max-w-5xl mx-auto px-4 mb-20">
+            <div className="text-center mb-10 scroll-animate opacity-0 translate-y-10 transition-all duration-1000 ease-out">
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-300 to-yellow-500 text-transparent bg-clip-text inline-block">
+                专属会员服务
+              </h2>
+              <div className="w-24 h-1 bg-gradient-to-r from-amber-400 to-yellow-300 mx-auto mt-4 rounded-full"></div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* 第一个服务卡片 */}
+              <div className="relative group scroll-animate opacity-0 translate-y-[30px] transition-all duration-700 ease-out delay-[200ms]">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-yellow-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full transform transition-transform group-hover:scale-[1.01] group-hover:border-amber-500/30 overflow-hidden">
+                  {/* 背景装饰 */}
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full blur-3xl -mr-20 -mt-20"></div>
+                  
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 mb-6">
+                    <svg className="w-8 h-8 text-amber-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M13 3V7C13 8.10457 13.8954 9 15 9H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  
+                  <h3 className="text-xl md:text-2xl font-bold text-amber-300 mb-4">AI证据链整理与匿名邮件举报</h3>
+                  
+                  <ul className="space-y-3 text-gray-400 mb-8">
+                    <li className="flex items-start">
+                      <span className="text-amber-400 mr-2">✓</span>
+                      一键上传截图、邮件、录音、视频等，AI审核与整理
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-amber-400 mr-2">✓</span>
+                      快速生成举报邮件内容模版，清晰、准确、有理有据
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-amber-400 mr-2">✓</span>
+                      匿名发送邮件至指定邮箱，最大化保护隐私
+                    </li>
+                  </ul>
+                  
+                  {/* 移除按钮，改为悬浮提示 */}
+                  <div className="text-center text-amber-400/70 text-sm italic">
+                    <span className="animate-pulse">✨ 尊享会员专属功能 ✨</span>
                   </div>
                 </div>
-
-                {/* 对话网格 */}
-                <div className="dialogue-grid" style={{ animationDelay: '2s' }}>
-                  {/* 左侧对话组 */}
-                  <div className="space-y-6">
-                    <div className="opacity-0 animate-slide-from-left" style={{ animationDelay: '2.4s' }}>
-                      <div className="flex items-start gap-4 message-bubble pua group">
-                        <div className="w-8 h-8 rounded-full bg-red-900/30 border border-red-500/30 flex-shrink-0 flex items-center justify-center avatar">
-                          <span className="text-red-400 text-sm">PUA</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="bg-red-500/5 rounded-2xl rounded-tl-none p-4 text-gray-300 shadow-lg border border-red-500/10 relative">
-                            <div className="absolute inset-0 rounded-2xl rounded-tl-none bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="relative">
-                              你是不是太敏感了？我只是开个玩笑，怎么这么认真？
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="opacity-0 animate-slide-from-right" style={{ animationDelay: '2.8s' }}>
-                      <div className="flex items-start gap-4 justify-end message-bubble victim group">
-                        <div className="flex-1">
-                          <div className="bg-blue-500/10 rounded-2xl rounded-tr-none p-4 text-gray-200 relative">
-                            <div className="absolute inset-0 rounded-2xl rounded-tr-none bg-gradient-to-r from-blue-400/0 via-blue-400/5 to-blue-400/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="relative">
-                              我觉得你说的话让我很不舒服。
-                            </div>
-                          </div>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-400/30 flex-shrink-0 flex items-center justify-center avatar animate-pulse-glow">
-                          <span className="text-blue-400 text-sm">我</span>
-                        </div>
-                      </div>
-                    </div>
+              </div>
+              
+              {/* 第二个服务卡片 */}
+              <div className="relative group scroll-animate opacity-0 translate-y-[30px] transition-all duration-700 ease-out delay-[400ms]">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-yellow-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full transform transition-transform group-hover:scale-[1.01] group-hover:border-amber-500/30 overflow-hidden">
+                  {/* 背景装饰 */}
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full blur-3xl -mr-20 -mt-20"></div>
+                  
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 mb-6">
+                    <svg className="w-8 h-8 text-amber-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15 10L11 14L9 12M12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
-
-                  {/* 右侧对话组 */}
-                  <div className="space-y-6">
-                    <div className="opacity-0 animate-slide-from-left" style={{ animationDelay: '3.2s' }}>
-                      <div className="flex items-start gap-4 message-bubble pua group">
-                        <div className="w-8 h-8 rounded-full bg-red-900/30 border border-red-500/30 flex-shrink-0 flex items-center justify-center avatar">
-                          <span className="text-red-400 text-sm">PUA</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="bg-red-500/5 rounded-2xl rounded-tl-none p-4 text-gray-300 shadow-lg border border-red-500/10 relative">
-                            <div className="absolute inset-0 rounded-2xl rounded-tl-none bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="relative">
-                              你怎么这么玻璃心？我都没觉得有什么问题。
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="opacity-0 animate-slide-from-right" style={{ animationDelay: '3.6s' }}>
-                      <div className="flex items-start gap-4 justify-end message-bubble victim group">
-                        <div className="flex-1">
-                          <div className="bg-blue-500/10 rounded-2xl rounded-tr-none p-4 text-gray-200 relative">
-                            <div className="absolute inset-0 rounded-2xl rounded-tr-none bg-gradient-to-r from-blue-400/0 via-blue-400/5 to-blue-400/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="relative">
-                              你昨天说的话让我很难过。
-                            </div>
-                          </div>
-                        </div>
-                        <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-400/30 flex-shrink-0 flex items-center justify-center avatar animate-pulse-glow">
-                          <span className="text-blue-400 text-sm">我</span>
-                        </div>
-                      </div>
-                    </div>
+                  
+                  <h3 className="text-xl md:text-2xl font-bold text-amber-300 mb-4">职场黑幕分享与查询平台</h3>
+                  
+                  <ul className="space-y-3 text-gray-400 mb-8">
+                    <li className="flex items-start">
+                      <span className="text-amber-400 mr-2">✓</span>
+                      匿名分享职场PUA行为，无需担心身份泄露
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-amber-400 mr-2">✓</span>
+                      AI智能审核内容，确保信息真实、可靠、合规
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-amber-400 mr-2">✓</span>
+                      一键查询企业PUA记录，入职前先知先觉
+                    </li>
+                  </ul>
+                  
+                  {/* 移除按钮，改为悬浮提示 */}
+                  <div className="text-center text-amber-400/70 text-sm italic">
+                    <span className="animate-pulse">✨ 尊享会员专属功能 ✨</span>
                   </div>
                 </div>
-
-                {/* 最后一组对话 - 强调部分 */}
-                <div className="space-y-6 opacity-0 animate-scale-in" style={{ animationDelay: '4s' }}>
-                  <div className="flex items-start gap-4 message-bubble pua group">
-                    <div className="w-8 h-8 rounded-full bg-red-900/30 border border-red-500/30 flex-shrink-0 flex items-center justify-center avatar">
-                      <span className="text-red-400 text-sm">PUA</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="bg-red-500/5 rounded-2xl rounded-tl-none p-4 text-gray-300 shadow-lg border border-red-500/10 relative">
-                        <div className="absolute inset-0 rounded-2xl rounded-tl-none bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="relative">
-                          <p>我这么做都是为了你好，你应该感激我。</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4 justify-end message-bubble victim group">
-                    <div className="flex-1">
-                      <div className="bg-blue-500/10 rounded-2xl rounded-tr-none p-4 text-gray-200 leading-relaxed relative">
-                        <div className="absolute inset-0 rounded-2xl rounded-tr-none bg-gradient-to-r from-blue-400/0 via-blue-400/5 to-blue-400/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="relative">
-                          <p className="text-blue-400 font-medium">我并不觉得这样做对我有帮助。</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-400/30 flex-shrink-0 flex items-center justify-center avatar animate-pulse-glow">
-                      <span className="text-blue-400 text-sm">我</span>
-                    </div>
-                  </div>
+              </div>
+            </div>
+            
+            {/* 付费服务底部横幅 - 改为主要的查看详情按钮 */}
+            <div className="mt-12 bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 border border-amber-500/20 relative overflow-hidden group hover:border-amber-500/40 transition-all duration-300 scroll-animate opacity-0 scale-95 transition-all duration-700 ease-out delay-[600ms]">
+              {/* 增强的背景效果 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-yellow-300/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full blur-3xl -mr-32 -mt-32"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-amber-500/5 to-transparent rounded-full blur-3xl -ml-32 -mb-32"></div>
+              
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                <div>
+                  <h3 className="text-xl font-bold text-amber-300">会员专享服务</h3>
+                  <p className="text-gray-400 mt-2">尊享高级功能，提升职场竞争力</p>
                 </div>
-
-                {/* 标语 */}
-                <div className="text-center pt-8 opacity-0 animate-fade-slide-in" style={{ animationDelay: '4.5s' }}>
-                  <p className="text-lg text-blue-400 font-medium mb-2 hover:scale-105 transition-transform">在这里，你的每一个感受都值得被倾听</p>
-                  <p className="text-sm text-gray-400">不要让任何人否定你的情感</p>
-                  <div className="mt-4 flex justify-center">
-                    <div className="text-blue-400 animate-pulse-glow">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                      </svg>
-                    </div>
+                <button className="w-full md:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-medium hover:shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all duration-300 hover:scale-105 whitespace-nowrap relative overflow-hidden group">
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]"></div>
                   </div>
-                </div>
+                  <span className="relative flex items-center justify-center gap-2 text-base">
+                    <Crown className="w-5 h-5 text-amber-800" />
+                    查看详情
+                  </span>
+                </button>
               </div>
             </div>
           </div>
@@ -987,7 +1040,7 @@ function App() {
                 uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
                 setUploadedImages([]);
               }
-            }} className="space-y-8">
+            }} className="space-y-8 scroll-animate opacity-0 translate-y-[30px] transition-all duration-700 ease-out">
               <div className="space-y-6 bg-gray-900/50 p-8 rounded-xl border border-gray-800 text-center">
                 {/* 谁PUA你？ - 移动端适配 */}
                 <div className="space-y-3">
@@ -1184,17 +1237,17 @@ function App() {
             )}
 
             {/* Disclaimer */}
-            <div className="mt-8 p-6 bg-gray-900 rounded-lg border border-gray-800">
+            <div className="mt-8 p-6 bg-gray-900 rounded-lg border border-gray-800 scroll-animate opacity-0 translate-y-[20px] transition-all duration-700 ease-out">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
                 <p className="text-base text-gray-400">
-                  本工具不提供法律建议，但提供基于心理分析的职场沟通策略。如果您正在经历严重的心理困扰，请寻求专业帮助。
+                  本产品不提供法律建议，如果您正在经历严重的心理困扰，请寻求专业帮助。
                 </p>
               </div>
             </div>
 
             {/* Copyright */}
-            <div className="mt-6 mb-4">
+            <div className="mt-6 mb-4 scroll-animate opacity-0 transition-all duration-700 ease-out delay-[300ms]">
               <p className="text-sm text-gray-600">© 2025 Happy Work. All rights reserved.</p>
             </div>
           </main>
