@@ -291,30 +291,13 @@ function App() {
     });
   }, [formData]);
 
-  // 使用防抖函数处理表单描述更新，避免频繁状态更新
-  const handleDescriptionChange = React.useMemo(() => {
-    let timeoutId: number | null = null;
-    
-    return (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      
-      // 立即更新UI显示值，但延迟更新状态
-      timeoutId = window.setTimeout(() => {
-        setFormData(prev => ({
-          ...prev,
-          description: value
-        }));
-        timeoutId = null;
-      }, 100); // 100ms防抖
-      
-      // 立即更新输入框值
-      e.target.value = value;
-    };
-  }, []);
+  // 处理表单描述更新
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      description: e.target.value
+    }));
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
