@@ -66,8 +66,8 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
   // 添加模式选择状态
   const [newChatMode, setNewChatMode] = useState<'simulation' | 'solution'>('solution');
   // 添加打字机效果状态
-  const [animatedMessages, setAnimatedMessages] = useState<{[key: number]: string}>({});
-  const [animationComplete, setAnimationComplete] = useState<{[key: number]: boolean}>({});
+  const [animatedMessages, setAnimatedMessages] = useState<{[key: string]: string}>({});
+  const [animationComplete, setAnimationComplete] = useState<{[key: string]: boolean}>({});
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const newChatFileInputRef = useRef<HTMLInputElement>(null);
@@ -116,35 +116,36 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
 
   // 监听消息变化，添加打字机效果
   useEffect(() => {
-    // 对每个AI消息应用打字机效果
-    currentMessages.forEach((msg, index) => {
-      if (msg.role === 'assistant' && !animationComplete[index]) {
-        // 如果这是一个新的AI消息且没有开始动画
-        if (animatedMessages[index] === undefined) {
-          setAnimatedMessages(prev => ({
-            ...prev,
-            [index]: ''
-          }));
-          
-          let currentCharIndex = 0;
-          const intervalId = setInterval(() => {
-            if (currentCharIndex <= msg.content.length) {
-              setAnimatedMessages(prev => ({
-                ...prev,
-                [index]: msg.content.substring(0, currentCharIndex)
-              }));
-              currentCharIndex++;
-            } else {
-              clearInterval(intervalId);
-              setAnimationComplete(prev => ({
-                ...prev,
-                [index]: true
-              }));
-            }
-          }, 15); // 调整速度
-          
-          return () => clearInterval(intervalId);
-        }
+    // 查找新添加的AI消息
+    currentMessages.forEach((msg) => {
+      // 使用消息ID作为键，确保唯一性
+      if (msg.role === 'assistant' && !animationComplete[msg.id]) {
+        // 如果消息未完成动画，开始打字机效果
+        setAnimatedMessages(prev => ({
+          ...prev,
+          [msg.id]: ''
+        }));
+        
+        let currentCharIndex = 0;
+        const content = msg.content;
+        
+        const intervalId = setInterval(() => {
+          if (currentCharIndex <= content.length) {
+            setAnimatedMessages(prev => ({
+              ...prev,
+              [msg.id]: content.substring(0, currentCharIndex)
+            }));
+            currentCharIndex++;
+          } else {
+            clearInterval(intervalId);
+            setAnimationComplete(prev => ({
+              ...prev,
+              [msg.id]: true
+            }));
+          }
+        }, 15);
+        
+        return () => clearInterval(intervalId);
       }
     });
   }, [currentMessages]);
@@ -244,8 +245,8 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
 
   // 获取显示内容（原内容或动画内容）
   const getDisplayContent = (message: Message, index: number) => {
-    if (message.role === 'assistant' && !animationComplete[index]) {
-      return animatedMessages[index] || '';
+    if (message.role === 'assistant' && !animationComplete[message.id]) {
+      return animatedMessages[message.id] || '';
     }
     return message.content;
   };
