@@ -1046,8 +1046,8 @@ function App() {
                     <textarea
                       value={formData.description}
                       onChange={handleDescriptionChange}
-                      placeholder="请详细描述或上传图片，告诉我您遭遇了什么，您不值得被这样对待"
-                      className="w-full h-32 p-6 rounded-xl bg-gray-800/50 border border-gray-700 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none resize-none text-gray-100 placeholder-gray-500 text-base"
+                      placeholder="👉 请在这里描述您遭遇了什么"
+                      className="w-full h-32 p-6 rounded-xl bg-gray-800/50 border border-gray-700 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none resize-none text-gray-100 placeholder-gray-400 text-base"
                     />
                     
                     {/* 将按钮移到输入框下方 */}
