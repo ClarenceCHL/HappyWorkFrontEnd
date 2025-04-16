@@ -425,10 +425,22 @@ function App() {
         };
         setCurrentMessages(prev => [...prev, assistantMessage]);
         
+        // 更新submitMode以匹配服务器返回的模式
+        if (data.mode) {
+          console.log('服务器返回的模式:', data.mode);
+          setSubmitMode(data.mode);
+        }
+        
         // 更新聊天历史
         setChatHistory(prev => prev.map(chat => 
           chat.id === currentChatId 
-            ? { ...chat, preview: data.advice, messages: [...chat.messages, newMessage, assistantMessage] }
+            ? { 
+                ...chat, 
+                preview: data.advice, 
+                messages: [...chat.messages, newMessage, assistantMessage],
+                // 同时更新聊天历史中的类型
+                type: data.mode || chat.type
+              }
             : chat
         ));
       } else {
@@ -513,13 +525,22 @@ function App() {
         };
         setCurrentMessages(prev => [...prev, assistantMessage]);
         
+        // 更新submitMode以匹配服务器返回的模式
+        if (data.mode) {
+          console.log('服务器返回的模式:', data.mode);
+          setSubmitMode(data.mode);
+        }
+        
+        // 使用服务器返回的模式创建新聊天
+        const actualMode = data.mode || formData.mode || 'solution';
+        
         // 添加到聊天历史
         const newChat: ChatHistory = {
-          id: Date.now().toString(),
-          title: `${formData.mode === 'simulation' ? '场景模拟' : '回复话术'} - ${formData.puaType.join(', ')}`,
+          id: data.chatId || Date.now().toString(),  // 优先使用服务器返回的chatId
+          title: `${actualMode === 'simulation' ? '场景模拟' : '回复话术'} - ${formData.puaType.join(', ')}`,
           preview: data.advice,
           timestamp: new Date(),
-          type: formData.mode || 'solution',  // 保存对话类型
+          type: actualMode,  // 使用服务器返回的模式
           messages: [initialMessage, assistantMessage]
         };
         setChatHistory(prev => [newChat, ...prev]);
@@ -613,8 +634,6 @@ function App() {
             setIsTyping(true);
             
             try {
-              // 使用formData中的mode参数
-              setSubmitMode(formData.mode || 'solution');
               await createNewChat(formData, initialMessage);
             } catch (err) {
               setError('网络错误，请检查后端服务是否运行');
@@ -967,7 +986,6 @@ function App() {
                 // 清理图片预览
                 uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
                 setUploadedImages([]);
-                setSubmitMode(null);
               }
             }} className="space-y-8">
               <div className="space-y-6 bg-gray-900/50 p-8 rounded-xl border border-gray-800 text-center">
