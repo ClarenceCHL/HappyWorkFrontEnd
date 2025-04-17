@@ -124,6 +124,7 @@ function App() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const heroImageRef = useRef<HTMLImageElement>(null);
+  const memberSectionRef = useRef<HTMLDivElement>(null);
 
   // 记忆化选项按钮组件，避免整个表单重新渲染
   const OptionButton = React.memo(({ 
@@ -569,6 +570,24 @@ function App() {
   // 激活滚动动画
   useScrollAnimation();
 
+  // 添加平滑滚动到会员服务区域的函数
+  const scrollToMemberSection = () => {
+    if (memberSectionRef.current) {
+      // 获取目标元素的位置
+      const elementPosition = memberSectionRef.current.getBoundingClientRect().top;
+      // 当前滚动位置
+      const offsetPosition = elementPosition + window.pageYOffset;
+      // 添加偏移量(导航栏高度 + 额外空间)
+      const offset = 80; // 根据导航栏实际高度调整
+      
+      // 使用window.scrollTo代替scrollIntoView，提供更精确的控制
+      window.scrollTo({
+        top: offsetPosition - offset,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#111111] text-gray-100">
       {error && (
@@ -679,8 +698,9 @@ function App() {
                   <span className={`${scrollY > 100 ? 'text-sm sm:text-base' : 'text-base sm:text-lg'} font-medium transition-all duration-300`}>Happy Work</span>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
-                  {/* 导航按钮也添加滚动动画效果，但每个按钮有不同的延迟 */}
+                  {/* 修改导航按钮添加onClick */}
                   <button 
+                    onClick={scrollToMemberSection}
                     className={`hidden md:flex items-center gap-1.5 px-3 ${scrollY > 100 ? 'py-1 text-xs' : 'py-1.5 text-sm'} 
                     bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-medium rounded-full 
                     transition-all duration-300 shadow-[0_0_10px_rgba(251,191,36,0.5)] hover:shadow-[0_0_15px_rgba(251,191,36,0.7)] 
@@ -691,10 +711,11 @@ function App() {
                       <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]" />
                     </div>
                     <Crown className={`${scrollY > 100 ? 'w-3 h-3' : 'w-4 h-4'} text-amber-800 group-hover:animate-pulse`} />
-                    <span className="relative z-10">专属会员服务</span>
+                    <span className="relative z-10">专属付费功能</span>
                     {/* 移动端显示的简化版本 */}
                   </button>
                   <button 
+                    onClick={scrollToMemberSection}
                     className={`md:hidden flex items-center justify-center ${scrollY > 100 ? 'w-6 h-6' : 'w-7 h-7'} 
                     bg-gradient-to-r from-amber-500 to-yellow-300 text-black rounded-full 
                     transition-all duration-300 shadow-[0_0_10px_rgba(251,191,36,0.5)] hover:shadow-[0_0_15px_rgba(251,191,36,0.7)] 
@@ -755,7 +776,7 @@ function App() {
             </div>
           </div>
 
-          {/* 健康提示横幅 */}
+          {/* 提示横幅 */}
           <div 
             ref={heroRef}
             className="pt-20 md:pt-28 pb-3 md:pb-4 text-center px-4 scroll-animate"
@@ -772,7 +793,7 @@ function App() {
                 <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.3)_50%,transparent_75%)] bg-[length:300%_100%]" />
                 <div className="absolute inset-0 animate-shimmer opacity-50 bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.1)_50%,transparent_75%)] bg-[length:300%_100%]" />
               </div>
-              <span className="relative z-10 text-xs sm:text-sm md:text-base">最新更新：会员付费功能开发中，敬请期待</span>
+              <span className="relative z-10 text-xs sm:text-sm md:text-base">专属付费功能开发中，敬请期待</span>
             </div>
           </div>
 
@@ -794,7 +815,7 @@ function App() {
                 transform: 'translateY(30px)'
               }}
             >
-              为职场人提供AI驱动的情绪发泄与解决方案
+              AI驱动的职场PUA解决方案
             </p>
           </header>
 
@@ -821,7 +842,7 @@ function App() {
             </div>
             
             <div className="grid md:grid-cols-2 gap-8">
-              {/* 功能1：PUA场景高度模拟还原 */}
+              {/* 功能1：模拟场景发泄 */}
               <div className="relative group scroll-animate opacity-0 translate-x-[-50px] transition-all duration-700 ease-out">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-blue-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
                 <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full transform transition-transform group-hover:scale-[1.01] group-hover:border-blue-500/30 overflow-hidden">
@@ -832,7 +853,7 @@ function App() {
                     <Heart className="w-8 h-8 text-blue-400" />
                   </div>
                   
-                  <h3 className="text-xl md:text-2xl font-bold text-blue-300 mb-4">PUA场景高度模拟还原</h3>
+                  <h3 className="text-xl md:text-2xl font-bold text-blue-300 mb-4">模拟场景发泄</h3>
                   
                   <p className="text-gray-400 mb-4">
                     通过您的选择、详细描述（上传图片），高度模拟还原PUA场景，让您在加密、脱敏、匿名的环境中发泄情绪。
@@ -855,7 +876,7 @@ function App() {
                 </div>
               </div>
               
-              {/* 功能2：职场PUA现实解决方案 */}
+              {/* 功能2：当下场景解决 */}
               <div className="relative group scroll-animate opacity-0 translate-x-[50px] transition-all duration-700 ease-out">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-blue-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
                 <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full transform transition-transform group-hover:scale-[1.01] group-hover:border-blue-500/30 overflow-hidden">
@@ -866,10 +887,10 @@ function App() {
                     <PlayCircle className="w-8 h-8 text-blue-400" />
                   </div>
                   
-                  <h3 className="text-xl md:text-2xl font-bold text-blue-300 mb-4">职场PUA现实解决方案</h3>
+                  <h3 className="text-xl md:text-2xl font-bold text-blue-300 mb-4">当下场景解决</h3>
                   
                   <p className="text-gray-400 mb-4">
-                    通过您提供的信息，结合您的情况，给出最符合您切身利益的反PUA解决方案。
+                    根据您正在面对的职场PUA，给出最符合您切身利益的当下场景解决方案。
                   </p>
                   
                   <ul className="space-y-3 text-gray-400 mb-8">
@@ -883,7 +904,7 @@ function App() {
                     </li>
                     <li className="flex items-start">
                       <span className="text-blue-400 mr-2">✓</span>
-                      站在您的立场，为您从长远发展上提供最优战略规划
+                      为您从长远发展上提供战略建议
                     </li>
                   </ul>
                 </div>
@@ -891,17 +912,17 @@ function App() {
             </div>
           </div>
 
-          {/* 专属会员服务板块 - 添加在Marketing Quote Section和Main Chat Interface之间 */}
-          <div className="max-w-5xl mx-auto px-4 mb-20">
+          {/* 专属付费功能板块 - 添加在Marketing Quote Section和Main Chat Interface之间 */}
+          <div ref={memberSectionRef} className="max-w-5xl mx-auto px-4 mb-20">
             <div className="text-center mb-10 scroll-animate opacity-0 translate-y-10 transition-all duration-1000 ease-out">
               <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-300 to-yellow-500 text-transparent bg-clip-text inline-block">
-                专属会员服务
+                专属付费功能
               </h2>
               <div className="w-24 h-1 bg-gradient-to-r from-amber-400 to-yellow-300 mx-auto mt-4 rounded-full"></div>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* 第一个服务卡片 */}
+            <div className="grid">
+              {/* 会员服务卡片 */}
               <div className="relative group scroll-animate opacity-0 translate-y-[30px] transition-all duration-700 ease-out delay-[200ms]">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-yellow-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
                 <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full transform transition-transform group-hover:scale-[1.01] group-hover:border-amber-500/30 overflow-hidden">
@@ -915,63 +936,26 @@ function App() {
                     </svg>
                   </div>
                   
-                  <h3 className="text-xl md:text-2xl font-bold text-amber-300 mb-4">AI证据链整理与匿名邮件举报</h3>
+                  <h3 className="text-xl md:text-2xl font-bold text-amber-300 mb-4">人设运营，高人智慧，战略破局</h3>
                   
                   <ul className="space-y-3 text-gray-400 mb-8">
                     <li className="flex items-start">
                       <span className="text-amber-400 mr-2">✓</span>
-                      一键上传截图、邮件、录音、视频等，AI审核与整理
+                      根据您正在经历的职场困扰，AI梳理PUA风险与心理痛点
                     </li>
                     <li className="flex items-start">
                       <span className="text-amber-400 mr-2">✓</span>
-                      快速生成举报邮件内容模版，清晰、准确、有理有据
+                      定制化《职场人设破局PUA》PDF方案，包含符合您实际情况的人设策略、情境话术、破局练习
                     </li>
                     <li className="flex items-start">
                       <span className="text-amber-400 mr-2">✓</span>
-                      匿名发送邮件至指定邮箱，最大化保护隐私
+                      下载专属PDF，借鉴高人智慧去说话、做事、立边界，拒绝成为职场炮灰
                     </li>
                   </ul>
                   
                   {/* 移除按钮，改为悬浮提示 */}
                   <div className="text-center text-amber-400/70 text-sm italic">
-                    <span className="animate-pulse">✨ 尊享会员专属功能 ✨</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* 第二个服务卡片 */}
-              <div className="relative group scroll-animate opacity-0 translate-y-[30px] transition-all duration-700 ease-out delay-[400ms]">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-yellow-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
-                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full transform transition-transform group-hover:scale-[1.01] group-hover:border-amber-500/30 overflow-hidden">
-                  {/* 背景装饰 */}
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full blur-3xl -mr-20 -mt-20"></div>
-                  
-                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 mb-6">
-                    <svg className="w-8 h-8 text-amber-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M15 10L11 14L9 12M12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  
-                  <h3 className="text-xl md:text-2xl font-bold text-amber-300 mb-4">职场黑幕分享与查询平台</h3>
-                  
-                  <ul className="space-y-3 text-gray-400 mb-8">
-                    <li className="flex items-start">
-                      <span className="text-amber-400 mr-2">✓</span>
-                      匿名分享职场PUA行为，无需担心身份泄露
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-amber-400 mr-2">✓</span>
-                      AI智能审核内容，确保信息真实、可靠、合规
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-amber-400 mr-2">✓</span>
-                      一键查询企业PUA记录，入职前先知先觉
-                    </li>
-                  </ul>
-                  
-                  {/* 移除按钮，改为悬浮提示 */}
-                  <div className="text-center text-amber-400/70 text-sm italic">
-                    <span className="animate-pulse">✨ 尊享会员专属功能 ✨</span>
+                    <span className="animate-pulse">✨ 一次付费，永久下载 ✨</span>
                   </div>
                 </div>
               </div>
@@ -986,8 +970,8 @@ function App() {
               
               <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                 <div>
-                  <h3 className="text-xl font-bold text-amber-300">会员专享服务</h3>
-                  <p className="text-gray-400 mt-2">尊享高级功能，提升职场竞争力</p>
+                  <h3 className="text-xl font-bold text-amber-300">专享定制化服务</h3>
+                  <p className="text-gray-400 mt-2">提升职场竞争力</p>
                 </div>
                 <button className="w-full md:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-medium hover:shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all duration-300 hover:scale-105 whitespace-nowrap relative overflow-hidden group">
                   <div className="absolute inset-0 overflow-hidden">
@@ -998,6 +982,59 @@ function App() {
                     查看详情
                   </span>
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Marketing Quote Section - PUA话术展示 */}
+          <div className="max-w-5xl mx-auto px-4 mb-20">
+            <div className="text-center mb-10 scroll-animate opacity-0 translate-y-10 transition-all duration-1000 ease-out">
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-red-300 to-red-500 text-transparent bg-clip-text inline-block">
+                听起来熟悉吗？
+              </h2>
+              <div className="w-24 h-1 bg-gradient-to-r from-red-400 to-red-300 mx-auto mt-4 rounded-full"></div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              {/* PUA话术卡片 */}
+              <div className="relative group scroll-animate opacity-0 translate-y-[20px] transition-all duration-700 ease-out delay-[200ms]">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-red-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full flex items-center transform transition-transform group-hover:scale-[1.01] group-hover:border-red-500/30">
+                  <div className="text-2xl text-gray-400 font-serif mr-4 opacity-50">"</div>
+                  <p className="text-xl text-red-200 italic">我当初就是顶着压力招了你，现在让我怎么向上面交代？</p>
+                </div>
+              </div>
+              
+              <div className="relative group scroll-animate opacity-0 translate-y-[20px] transition-all duration-700 ease-out delay-[300ms]">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-red-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full flex items-center transform transition-transform group-hover:scale-[1.01] group-hover:border-red-500/30">
+                  <div className="text-2xl text-gray-400 font-serif mr-4 opacity-50">"</div>
+                  <p className="text-xl text-red-200 italic">你是不是不太适合职场？</p>
+                </div>
+              </div>
+              
+              <div className="relative group scroll-animate opacity-0 translate-y-[20px] transition-all duration-700 ease-out delay-[400ms]">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-red-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full flex items-center transform transition-transform group-hover:scale-[1.01] group-hover:border-red-500/30">
+                  <div className="text-2xl text-gray-400 font-serif mr-4 opacity-50">"</div>
+                  <p className="text-xl text-red-200 italic">我本来是很看好你的。</p>
+                </div>
+              </div>
+              
+              <div className="relative group scroll-animate opacity-0 translate-y-[20px] transition-all duration-700 ease-out delay-[500ms]">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-red-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full flex items-center transform transition-transform group-hover:scale-[1.01] group-hover:border-red-500/30">
+                  <div className="text-2xl text-gray-400 font-serif mr-4 opacity-50">"</div>
+                  <p className="text-xl text-red-200 italic">我对你是有些失望的，当初给你定级是高于你面试时的水平。</p>
+                </div>
+              </div>
+              
+              <div className="relative group scroll-animate opacity-0 translate-y-[20px] transition-all duration-700 ease-out delay-[600ms] md:col-span-2 mx-auto max-w-lg">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-red-300 rounded-2xl blur opacity-30 group-hover:opacity-100 transition-all duration-500"></div>
+                <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800 h-full flex items-center transform transition-transform group-hover:scale-[1.01] group-hover:border-red-500/30">
+                  <div className="text-2xl text-gray-400 font-serif mr-4 opacity-50">"</div>
+                  <p className="text-xl text-red-200 italic">我都是为了你好才跟你说这些。</p>
+                </div>
               </div>
             </div>
           </div>
