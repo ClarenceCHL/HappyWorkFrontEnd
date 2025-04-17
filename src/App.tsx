@@ -718,23 +718,10 @@ function App() {
           onClose={() => {
             setShowAuth(false);
             
-            // 确保主页内容正确显示
-            setTimeout(() => {
-              const mainContent = document.querySelector('main');
-              if (mainContent) {
-                mainContent.style.display = 'block';
-                
-                // 触发重绘
-                const tempDisplay = mainContent.style.display;
-                mainContent.style.display = 'none';
-                setTimeout(() => {
-                  mainContent.style.display = tempDisplay;
-                }, 0);
-              }
-              
-              // 重置滚动位置
-              window.scrollTo(0, 0);
-            }, 0);
+            // 使用简单的window.location.reload()强制刷新页面
+            // 设置一个本地存储标记，以便在刷新后知道这是从登录页面返回
+            localStorage.setItem('force_reload_fix', 'true');
+            window.location.reload();
           }}
           defaultMode={authMode}
           userEmail={userEmail}
@@ -745,23 +732,10 @@ function App() {
           onBack={() => {
             setShowChat(false);
             
-            // 确保主页内容正确显示
-            setTimeout(() => {
-              const mainContent = document.querySelector('main');
-              if (mainContent) {
-                mainContent.style.display = 'block';
-                
-                // 触发重绘
-                const tempDisplay = mainContent.style.display;
-                mainContent.style.display = 'none';
-                setTimeout(() => {
-                  mainContent.style.display = tempDisplay;
-                }, 0);
-              }
-              
-              // 重置滚动位置
-              window.scrollTo(0, 0);
-            }, 0);
+            // 使用简单的window.location.reload()强制刷新页面
+            // 设置一个本地存储标记，以便在刷新后知道这是从聊天页面返回
+            localStorage.setItem('force_reload_fix', 'true');
+            window.location.reload();
           }}
           currentMessages={currentMessages}
           chatHistory={chatHistory}
@@ -1329,9 +1303,6 @@ function App() {
                           }`}
                         >
                           <MessageSquare className={`w-5 h-5 ${showSubmitMenu ? 'animate-icon-pulse' : ''}`} />
-                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            选择回复模式
-                          </span>
                         </button>
                         {showSubmitMenu && (
                           <div className="absolute bottom-full right-0 mb-2 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 overflow-hidden animate-menu-in">
