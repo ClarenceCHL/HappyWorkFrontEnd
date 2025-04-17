@@ -244,7 +244,7 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
   };
 
   // 获取显示内容（原内容或动画内容）
-  const getDisplayContent = (message: Message, index: number) => {
+  const getDisplayContent = (message: Message) => {
     if (message.role === 'assistant' && !animationComplete[message.id]) {
       return animatedMessages[message.id] || '';
     }
@@ -359,7 +359,9 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
                   setCurrentMessages([]);
                   setCurrentChatId(null);
                 } else {
+                  // 返回主页，触发回调
                   onBack();
+                  // 更新URL，无需手动调用history.back()，让App组件统一管理历史
                 }
               }}
               className="flex items-center text-gray-400 hover:text-white"
@@ -607,7 +609,7 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
                             </div>
                           )}
                           <div className="whitespace-pre-wrap text-sm md:text-base">
-                            {getDisplayContent(msg, index)}
+                            {getDisplayContent(msg)}
                           </div>
                         </div>
                         <div className="mt-1 text-xs text-gray-500 flex justify-end">

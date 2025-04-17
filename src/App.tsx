@@ -196,26 +196,85 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 页面加载时的动画
+  // 处理浏览器返回按钮
+  useEffect(() => {
+    // 监听返回按钮
+    const handlePopState = () => {
+      // 强制重置页面状态
+      setShowChat(false);
+      setShowAuth(false);
+      
+      // 强制页面重新渲染主要内容
+      const mainSection = document.querySelector('main');
+      if (mainSection) {
+        // 触发重绘
+        mainSection.style.display = 'none';
+        setTimeout(() => {
+          mainSection.style.display = 'block';
+        }, 10);
+      }
+      
+      // 重置滚动位置
+      window.scrollTo(0, 0);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // 处理页面初始加载和切换
   useEffect(() => {
     if (!showChat && !showAuth) {
-      // 获取各元素引用
+      // 确保主页内容在返回时可见
+      const mainContent = document.querySelector('main');
+      if (mainContent) {
+        mainContent.style.display = 'block';
+      }
+      
+      // 刷新页面动画
       const nav = navRef.current;
-      
-      // 设置初始状态
-      if (nav) nav.style.opacity = '0';
-      
-      // 依次执行动画
-      setTimeout(() => {
-        if (nav) {
-          nav.style.opacity = '1';
-          nav.style.transform = 'translateY(0)';
-        }
-      }, 300);
-      
-      // 不再处理其他元素的初始动画，由滚动动画接管
+      if (nav) {
+        nav.style.opacity = '1';
+        nav.style.transform = 'translateY(0)';
+      }
     }
   }, [showChat, showAuth]);
+
+  // 在应用加载时处理从登录页刷新的情况
+  useEffect(() => {
+    // 检查是否是通过强制刷新解决UI问题
+    if (localStorage.getItem('force_reload_fix') === 'true') {
+      // 清除标志
+      localStorage.removeItem('force_reload_fix');
+      
+      // 检查是否有登录成功的标志
+      if (localStorage.getItem('login_success') === 'true') {
+        localStorage.removeItem('login_success');
+        
+        // 显示登录成功消息
+        setSuccessMessage('登录成功！');
+        setShowSuccessToast(true);
+        setTimeout(() => {
+          setShowSuccessToast(false);
+        }, 2700);
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 3000);
+      }
+      
+      // 强制重绘主页内容
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        // 确保元素可见
+        mainElement.style.display = 'block';
+        mainElement.style.visibility = 'visible';
+        mainElement.style.opacity = '1';
+        
+        // 触发重绘
+        document.body.classList.add('force-visible');
+      }
+    }
+  }, []);
 
   // 获取用户信息
   const fetchUserInfo = async () => {
@@ -588,8 +647,53 @@ function App() {
     }
   };
 
+  // 添加处理主页面元素可见性的效果
+  useEffect(() => {
+    if (!showChat && !showAuth) {
+      // 这是主页状态，确保所有元素可见
+      // 给页面添加loaded类，用于CSS控制可见性
+      document.body.classList.add('home-loaded');
+      
+      // 添加用户交互监听
+      const handleUserInteraction = () => {
+        document.body.classList.add('user-interacted');
+      };
+      
+      // 监听用户交互
+      window.addEventListener('click', handleUserInteraction);
+      window.addEventListener('scroll', handleUserInteraction);
+      window.addEventListener('keydown', handleUserInteraction);
+      
+      return () => {
+        window.removeEventListener('click', handleUserInteraction);
+        window.removeEventListener('scroll', handleUserInteraction);
+        window.removeEventListener('keydown', handleUserInteraction);
+      };
+    } else {
+      // 非主页状态，移除类
+      document.body.classList.remove('home-loaded');
+    }
+  }, [showChat, showAuth]);
+
   return (
-    <div className="min-h-screen bg-[#111111] text-gray-100">
+    <div 
+      className="min-h-screen bg-[#111111] text-gray-100"
+      onClick={() => {
+        // 如果当前是主页状态，确保主页内容可见
+        if (!showChat && !showAuth) {
+          // 强制显示主页内容
+          const mainElement = document.querySelector('main');
+          if (mainElement) {
+            mainElement.style.display = 'block';
+            mainElement.style.visibility = 'visible';
+            mainElement.style.opacity = '1';
+          }
+          
+          // 添加强制可见类
+          document.body.classList.add('force-visible');
+        }
+      }}
+    >
       {error && (
         <div className="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center">
           {error}
@@ -611,28 +715,54 @@ function App() {
 
       {showAuth ? (
         <Auth 
-          onSuccess={(token) => {
-            handleSetToken(token);
+          onClose={() => {
             setShowAuth(false);
-            setSuccessMessage('登录成功！');
-            setShowSuccessToast(true);
-            // 稍后开始淡出
+            
+            // 确保主页内容正确显示
             setTimeout(() => {
-              setShowSuccessToast(false);
-            }, 2700); 
-            // 动画结束后清除消息
-            setTimeout(() => {
-              setSuccessMessage('');
-            }, 3000); 
+              const mainContent = document.querySelector('main');
+              if (mainContent) {
+                mainContent.style.display = 'block';
+                
+                // 触发重绘
+                const tempDisplay = mainContent.style.display;
+                mainContent.style.display = 'none';
+                setTimeout(() => {
+                  mainContent.style.display = tempDisplay;
+                }, 0);
+              }
+              
+              // 重置滚动位置
+              window.scrollTo(0, 0);
+            }, 0);
           }}
-          onClose={() => setShowAuth(false)}
           defaultMode={authMode}
           userEmail={userEmail}
           token={token}
         />
       ) : showChat ? (
         <Chat
-          onBack={() => setShowChat(false)}
+          onBack={() => {
+            setShowChat(false);
+            
+            // 确保主页内容正确显示
+            setTimeout(() => {
+              const mainContent = document.querySelector('main');
+              if (mainContent) {
+                mainContent.style.display = 'block';
+                
+                // 触发重绘
+                const tempDisplay = mainContent.style.display;
+                mainContent.style.display = 'none';
+                setTimeout(() => {
+                  mainContent.style.display = tempDisplay;
+                }, 0);
+              }
+              
+              // 重置滚动位置
+              window.scrollTo(0, 0);
+            }, 0);
+          }}
           currentMessages={currentMessages}
           chatHistory={chatHistory}
           onSendMessage={handleSendMessage}
@@ -1040,12 +1170,16 @@ function App() {
           </div>
 
           {/* Main Chat Interface */}
-          <main className="max-w-5xl mx-auto px-4 pb-20 -mt-8">
+          <main 
+            className="max-w-5xl mx-auto px-4 pb-20 -mt-8 main-content-visible"
+            style={{display: !showChat && !showAuth ? 'block' : 'none'}}
+          >
             <form onSubmit={async (e) => {
               e.preventDefault();
               if (!token) {
                 setAuthMode('login');
                 setShowAuth(true);
+                window.history.pushState({page: 'auth'}, '', '#auth');
                 return;
               }
               if (!submitMode) {
@@ -1053,6 +1187,7 @@ function App() {
                 return;
               }
               setShowChat(true);
+              window.history.pushState({page: 'chat'}, '', '#chat');
               setIsTyping(true);
 
               const initialMessage: Message = {

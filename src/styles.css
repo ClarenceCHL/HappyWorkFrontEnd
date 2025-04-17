@@ -437,4 +437,39 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* 强制页面元素可见 */
+body.force-visible main,
+body.force-visible main > *,
+body.force-visible main > * > *,
+body.force-visible main > * > * > * {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* 额外添加紧急修复，使用HTML标签选择器确保权重 */
+main {
+  visibility: visible !important;
+  display: block !important;
+  opacity: 1 !important;
+}
+
+main * {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* 确保主页内容可见的样式 */
+.main-content-visible {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+body.home-loaded main {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 } 

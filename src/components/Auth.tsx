@@ -5,7 +5,6 @@ import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 const isChangePasswordMode = (mode: string): boolean => mode === 'changePassword';
 
 interface AuthProps {
-  onSuccess: (token: string) => void;
   onClose: () => void;
   defaultMode: 'login' | 'register' | 'changePassword';
   userEmail?: string | null;
@@ -14,7 +13,7 @@ interface AuthProps {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, userEmail, token }) => {
+export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, token }) => {
   const [identifier, setIdentifier] = useState(isChangePasswordMode(defaultMode) && userEmail ? userEmail : '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -138,7 +137,15 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
       const data = await response.json();
 
       if (data.status === 'success') {
-        onSuccess(data.token);
+        // 保存token到localStorage
+        localStorage.setItem('userToken', data.token);
+        
+        // 设置标志，表明通过刷新页面解决UI问题
+        localStorage.setItem('force_reload_fix', 'true');
+        localStorage.setItem('login_success', 'true');
+        
+        // 强制刷新页面到主页
+        window.location.href = window.location.origin + window.location.pathname;
       } else {
         setError(data.message);
       }
@@ -294,7 +301,18 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
               </h2>
             </div>
             <button
-              onClick={onClose}
+              onClick={() => {
+                // 存储用户登录状态，以便页面刷新后保持
+                if (token) {
+                  localStorage.setItem('temp_token', token);
+                }
+                
+                // 设置一个标志，表明我们正在通过刷新页面来解决UI问题
+                localStorage.setItem('force_reload_fix', 'true');
+                
+                // 强制刷新页面到主页
+                window.location.href = window.location.origin + window.location.pathname;
+              }}
               className="text-gray-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -386,6 +404,11 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
                         {countdown > 0 ? `${countdown}秒后重试` : '获取验证码'}
                       </button>
                     </div>
+                    {countdown > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        若未收到验证码，请检查垃圾邮件，或将happyworkfkpua@gmail.com加入通讯录。
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center">
@@ -489,6 +512,11 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
                     {countdown > 0 ? `${countdown}秒后重试` : '获取验证码'}
                   </button>
                 </div>
+                {countdown > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    若未收到验证码，请检查垃圾邮件，或将happyworkfkpua@gmail.com加入通讯录。
+                  </p>
+                )}
               </div>
               
               <div className="flex justify-end">
@@ -576,6 +604,11 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onClose, defaultMode, use
                     {countdown > 0 ? `${countdown}秒后重试` : '获取验证码'}
                   </button>
                 </div>
+                {countdown > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    若未收到验证码，请检查垃圾邮件，或将happyworkfkpua@gmail.com加入通讯录。
+                  </p>
+                )}
               </div>
               
               <button
