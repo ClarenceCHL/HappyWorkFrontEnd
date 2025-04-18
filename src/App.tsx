@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Shield, AlertTriangle, History, Image as ImageIcon, X, PlayCircle, MessageCircle, LogOut, Key, Crown, Heart } from 'lucide-react';
 import { Auth } from './components/Auth';
 import { Chat, Message as ChatMessage } from './components/Chat';
+import PaidFeaturePage from './components/PaidFeaturePage';
 import heroImage from './assets/hero-image.png';
 import './styles.css';
 
@@ -116,6 +117,7 @@ function App() {
   const [submitMode, setSubmitMode] = useState<'simulation' | 'solution' | null>(null);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showPaidFeaturePage, setShowPaidFeaturePage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -160,7 +162,7 @@ function App() {
   // 在切换页面时清理错误信息
   useEffect(() => {
     setError('');
-  }, [showChat, showAuth]);
+  }, [showChat, showAuth, showPaidFeaturePage]);
 
   // 添加点击外部关闭下拉菜单的功能
   useEffect(() => {
@@ -224,7 +226,7 @@ function App() {
 
   // 处理页面初始加载和切换
   useEffect(() => {
-    if (!showChat && !showAuth) {
+    if (!showChat && !showAuth && !showPaidFeaturePage) {
       // 确保主页内容在返回时可见
       const mainContent = document.querySelector('main');
       if (mainContent) {
@@ -238,7 +240,7 @@ function App() {
         nav.style.transform = 'translateY(0)';
       }
     }
-  }, [showChat, showAuth]);
+  }, [showChat, showAuth, showPaidFeaturePage]);
 
   // 在应用加载时处理从登录页刷新的情况
   useEffect(() => {
@@ -649,7 +651,7 @@ function App() {
 
   // 添加处理主页面元素可见性的效果
   useEffect(() => {
-    if (!showChat && !showAuth) {
+    if (!showChat && !showAuth && !showPaidFeaturePage) {
       // 这是主页状态，确保所有元素可见
       // 给页面添加loaded类，用于CSS控制可见性
       document.body.classList.add('home-loaded');
@@ -673,14 +675,14 @@ function App() {
       // 非主页状态，移除类
       document.body.classList.remove('home-loaded');
     }
-  }, [showChat, showAuth]);
+  }, [showChat, showAuth, showPaidFeaturePage]);
 
   return (
     <div 
       className="min-h-screen bg-[#111111] text-gray-100"
       onClick={() => {
         // 如果当前是主页状态，确保主页内容可见
-        if (!showChat && !showAuth) {
+        if (!showChat && !showAuth && !showPaidFeaturePage) {
           // 强制显示主页内容
           const mainElement = document.querySelector('main');
           if (mainElement) {
@@ -713,7 +715,13 @@ function App() {
         <span className="text-sm font-medium">{successMessage}</span>
       </div>
 
-      {showAuth ? (
+      {showPaidFeaturePage ? (
+        <PaidFeaturePage onClose={() => {
+          setShowPaidFeaturePage(false);
+          localStorage.setItem('force_reload_fix', 'true');
+          window.location.reload();
+        }} />
+      ) : showAuth ? (
         <Auth 
           onClose={() => {
             setShowAuth(false);
@@ -1040,7 +1048,7 @@ function App() {
                     </svg>
                   </div>
                   
-                  <h3 className="text-xl md:text-2xl font-bold text-amber-300 mb-4">人设运营，高人智慧，战略破局</h3>
+                  <h3 className="text-xl md:text-2xl font-bold text-amber-300 mb-4">人设经营，高人智慧，战略破局</h3>
                   
                   <ul className="space-y-3 text-gray-400 mb-8">
                     <li className="flex items-start">
@@ -1049,11 +1057,11 @@ function App() {
                     </li>
                     <li className="flex items-start">
                       <span className="text-amber-400 mr-2">✓</span>
-                      定制化《职场人设破局PUA》PDF方案，包含符合您实际情况的人设策略、情境话术、破局练习
+                      定制化《人设战略破局职场PUA》PDF方案，包含符合您实际情况的人设策略、情境话术、破局练习
                     </li>
                     <li className="flex items-start">
                       <span className="text-amber-400 mr-2">✓</span>
-                      下载专属PDF，借鉴高人智慧去说话、做事、立边界，拒绝成为职场炮灰
+                      学习用高人的智慧去说话、做事、立边界，拒绝成为职场炮灰
                     </li>
                   </ul>
                   
@@ -1077,7 +1085,12 @@ function App() {
                   <h3 className="text-xl font-bold text-amber-300">专享定制化服务</h3>
                   <p className="text-gray-400 mt-2">提升职场竞争力</p>
                 </div>
-                <button className="w-full md:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-medium hover:shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all duration-300 hover:scale-105 whitespace-nowrap relative overflow-hidden group">
+                <button 
+                  onClick={() => {
+                    setShowPaidFeaturePage(true);
+                    window.scrollTo(0, 0);
+                  }}
+                  className="w-full md:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-medium hover:shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all duration-300 hover:scale-105 whitespace-nowrap relative overflow-hidden group">
                   <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]"></div>
                   </div>
@@ -1146,7 +1159,7 @@ function App() {
           {/* Main Chat Interface */}
           <main 
             className="max-w-5xl mx-auto px-4 pb-20 -mt-8 main-content-visible"
-            style={{display: !showChat && !showAuth ? 'block' : 'none'}}
+            style={{display: !showChat && !showAuth && !showPaidFeaturePage ? 'block' : 'none'}}
           >
             <form onSubmit={async (e) => {
               e.preventDefault();
