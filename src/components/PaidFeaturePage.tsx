@@ -12,9 +12,10 @@ interface PaidFeaturePageProps {
   onLoginRequired: () => void;
   isUserPaid: boolean;
   hasUserPDF: boolean;
+  onPaymentSuccess: () => void;
 }
 
-const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequired, isUserPaid, hasUserPDF }) => {
+const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequired, isUserPaid, hasUserPDF, onPaymentSuccess }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -59,15 +60,17 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
 
       if (response.ok && result.status === 'success') {
         console.log("免费访问激活成功:", result.message);
-        // 在这里添加后续逻辑，例如关闭模态框并显示成功信息或跳转
+        // 关闭模态框
         handleClosePaymentModal();
-        // 示例：显示一个成功提示
+        
+        // !!! 调用回调函数通知 App 更新状态 !!!
+        onPaymentSuccess(); 
+
+        // 显示成功提示
         setSuccessMessage('限时免费访问成功！即将进入下一步...');
         setShowSuccessToast(true);
         setTimeout(() => {
           setShowSuccessToast(false);
-          // 这里可以添加跳转到问卷页面的逻辑 (如果需要)
-          // alert("跳转到问卷页面 (功能待实现)"); 
         }, 2700);
         setTimeout(() => {
           setSuccessMessage('');

@@ -699,6 +699,14 @@ function App() {
     }
   }, [showChat, showAuth, showPaidFeaturePage]);
 
+  // 新增：处理支付成功的回调函数
+  const handlePaymentSuccess = () => {
+    console.log("App: Payment successful, updating UI state.");
+    setIsUserPaid(true);
+    // 可选：如果支付成功意味着 PDF 肯定还没生成，也可以在这里重置
+    // setHasUserPDF(false); 
+  };
+
   return (
     <div 
       className="min-h-screen bg-[#111111] text-gray-100"
@@ -736,6 +744,7 @@ function App() {
           }}
           isUserPaid={isUserPaid}
           hasUserPDF={hasUserPDF}
+          onPaymentSuccess={handlePaymentSuccess}
         />
       ) : showAuth ? (
         <Auth 
