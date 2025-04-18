@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
-import { Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, ArrowLeft, Eye, EyeOff, X } from 'lucide-react';
 
 // 使用type guard函数来检查模式
 const isChangePasswordMode = (mode: string): boolean => mode === 'changePassword';
 
 interface AuthProps {
-  onClose: () => void;
+  onClose: (success?: boolean) => void;
   defaultMode: 'login' | 'register' | 'changePassword';
   userEmail?: string | null;
   token?: string | null;
+  onSetToken: (token: string | null) => void;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, token }) => {
+export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, token, onSetToken }) => {
   const [identifier, setIdentifier] = useState(isChangePasswordMode(defaultMode) && userEmail ? userEmail : '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,6 +27,22 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    if (isChangePasswordMode(mode) && userEmail) {
+      setIdentifier(userEmail);
+    } else if (mode === 'login' || mode === 'register') {
+      if (!isChangePasswordMode(defaultMode)) {
+        setIdentifier('');
+      }
+    }
+    setError('');
+    setPassword('');
+    setConfirmPassword('');
+    setCode('');
+    setCountdown(0);
+    setIsCodeLogin(false);
+  }, [mode, userEmail, defaultMode]);
 
   const handleSendCode = async () => {
     if (!identifier) {
@@ -79,9 +96,10 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
 
     if (!identifier) {
       setError('请输入邮箱');
@@ -95,36 +113,20 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
       return;
     }
 
-    if (mode === 'register') {
-      if (!identifier || !password || !code) {
-        setError('请填写所有必要信息');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError('两次输入的密码不一致');
-        return;
-      }
-      if (password.length < 6) {
-        setError('密码长度至少6位');
-        return;
-      }
-    } else if (!isCodeLogin && (!identifier || !password)) {
-      setError('请填写所有必要信息');
+    if (!isCodeLogin && !password) {
+      setError('请输入密码');
+      return;
+    }
+    if (isCodeLogin && !code) {
+      setError('请输入验证码');
       return;
     }
 
     setLoading(true);
 
     try {
-      const endpoint = mode === 'register' 
-        ? '/register' 
-        : (isCodeLogin ? '/verify_code' : '/login');
-
-      const body = mode === 'register'
-        ? { identifier, password, code }
-        : isCodeLogin
-        ? { identifier, code }
-        : { identifier, password };
+      const endpoint = isCodeLogin ? '/verify_code' : '/login';
+      const body = isCodeLogin ? { identifier, code } : { identifier, password };
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
@@ -136,21 +138,16 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
 
       const data = await response.json();
 
-      if (data.status === 'success') {
-        // 保存token到localStorage
-        localStorage.setItem('userToken', data.token);
-        
-        // 设置标志，表明通过刷新页面解决UI问题
-        localStorage.setItem('force_reload_fix', 'true');
-        localStorage.setItem('login_success', 'true');
-        
-        // 强制刷新页面到主页
-        window.location.href = window.location.origin + window.location.pathname;
+      if (data.status === 'success' && data.token) {
+        onSetToken(data.token);
+        onClose(true);
       } else {
-        setError(data.message);
+        setError(data.message || '登录失败');
+        onSetToken(null);
       }
     } catch (err) {
       setError('网络错误，请稍后重试');
+      onSetToken(null);
     } finally {
       setLoading(false);
     }
@@ -188,6 +185,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
     }
 
     setLoading(true);
+    setSuccessMessage('');
 
     try {
       const response = await fetch(`${API_URL}/register`, {
@@ -205,7 +203,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
       const data = await response.json();
       if (data.status === 'success') {
         setError('');
-        setSuccessMessage('注册成功！请使用您的账号登录。');
+        setSuccessMessage('注册成功！将自动切换到登录页面。');
         setIdentifier('');
         setPassword('');
         setConfirmPassword('');
@@ -248,20 +246,15 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
     }
 
     setLoading(true);
+    setSuccessMessage('');
 
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      // 添加Authorization头
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
       const response = await fetch(`${API_URL}/change_password`, {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           newPassword: password,
           code
@@ -280,7 +273,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
           onClose();
         }, 1500);
       } else {
-        setError(data.message || '密码修改失败，请重试');
+        setError(data.message || '密码修改失败');
       }
     } catch (err) {
       setError('网络错误，请稍后重试');
@@ -302,15 +295,12 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
             </div>
             <button
               onClick={() => {
-                // 存储用户登录状态，以便页面刷新后保持
                 if (token) {
                   localStorage.setItem('temp_token', token);
                 }
                 
-                // 设置一个标志，表明我们正在通过刷新页面来解决UI问题
                 localStorage.setItem('force_reload_fix', 'true');
                 
-                // 强制刷新页面到主页
                 window.location.href = window.location.origin + window.location.pathname;
               }}
               className="text-gray-400 hover:text-white transition-colors"
@@ -332,7 +322,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
           )}
 
           {mode === 'login' && (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">电子邮箱</label>
                 <input
@@ -622,6 +612,13 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
           )}
         </div>
       </div>
+      <button
+        onClick={() => onClose()}
+        className="absolute top-4 right-4 text-gray-500 hover:text-gray-200 transition-colors z-10"
+        aria-label="关闭"
+      >
+        <X className="w-6 h-6" />
+      </button>
     </div>
   );
 }; 

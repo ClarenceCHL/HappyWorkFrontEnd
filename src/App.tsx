@@ -54,44 +54,6 @@ interface Chat {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// 添加自定义 hook 用于滚动动画
-function useScrollAnimation() {
-  useEffect(() => {
-    const animateOnScroll = () => {
-      const elements = document.querySelectorAll('.scroll-animate');
-      
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('animate-in');
-            observer.unobserve(entry.target); // 动画触发后不再观察
-          }
-        });
-      }, {
-        threshold: 0.15, // 元素出现15%时触发
-        rootMargin: '0px 0px -100px 0px' // 在元素进入视口前100px触发
-      });
-      
-      elements.forEach(el => {
-        observer.observe(el);
-      });
-      
-      return () => {
-        elements.forEach(el => {
-          observer.unobserve(el);
-        });
-      };
-    };
-    
-    // 页面加载后开始观察
-    const timeout = setTimeout(animateOnScroll, 800); // 调整延迟，平衡初始动画和滚动动画
-    
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, []);
-}
-
 function App() {
   const [formData, setFormData] = useState<FormData>({
     puaType: [],
@@ -109,6 +71,8 @@ function App() {
     return localStorage.getItem('userToken');
   });
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isUserPaid, setIsUserPaid] = useState<boolean>(false);
+  const [hasUserPDF, setHasUserPDF] = useState<boolean>(false);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'changePassword'>('login');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
@@ -118,6 +82,7 @@ function App() {
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showPaidFeaturePage, setShowPaidFeaturePage] = useState(false);
+  const [loginRedirectTarget, setLoginRedirectTarget] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -179,11 +144,15 @@ function App() {
     };
   }, []);
 
-  // 在获取token后获取用户信息
+  // 在获取token后获取用户信息（包括 is_paid 和 has_pdf）
   useEffect(() => {
     if (token) {
       fetchUserInfo();
       fetchChatHistory();
+    } else {
+      // 如果没有 token（用户未登录或已登出），重置状态
+      setIsUserPaid(false);
+      setHasUserPDF(false);
     }
   }, [token]);
 
@@ -278,7 +247,7 @@ function App() {
     }
   }, []);
 
-  // 获取用户信息
+  // 获取用户信息 (更新)
   const fetchUserInfo = async () => {
     if (!token) return;
     
@@ -293,9 +262,19 @@ function App() {
       
       if (data.status === 'success') {
         setUserEmail(data.email);
+        setIsUserPaid(data.is_paid);
+        setHasUserPDF(data.has_pdf);
+      } else {
+        // 获取失败或 token 失效等情况，重置状态
+        setUserEmail(null);
+        setIsUserPaid(false);
+        setHasUserPDF(false);
       }
     } catch (error) {
       console.error('获取用户信息失败:', error);
+      setUserEmail(null);
+      setIsUserPaid(false);
+      setHasUserPDF(false);
     }
   };
 
@@ -618,18 +597,61 @@ function App() {
     }
   };
 
-  // 更新setToken函数，同时更新localStorage
+  // 更新 setToken 函数，登出时重置 isUserPaid 和 hasUserPDF
   const handleSetToken = (newToken: string | null) => {
     if (newToken) {
       localStorage.setItem('userToken', newToken);
     } else {
       localStorage.removeItem('userToken');
+      setIsUserPaid(false);
+      setHasUserPDF(false);
+      setUserEmail(null);
     }
     setToken(newToken);
   };
 
-  // 激活滚动动画
-  useScrollAnimation();
+  // 将滚动动画逻辑移入 App 组件
+  useEffect(() => {
+    // 仅当显示主页时才设置滚动动画
+    if (!showChat && !showAuth && !showPaidFeaturePage) {
+      const elements = document.querySelectorAll('.scroll-animate');
+      
+      // 重置动画状态，以便返回时能重新播放
+      elements.forEach(el => {
+        el.classList.remove('animate-in'); 
+        // 可能需要根据你的 CSS 重置其他样式，例如 opacity 和 transform
+        (el as HTMLElement).style.opacity = '0'; 
+        // 你可能需要更具体的 transform 重置，取决于你的 .scroll-animate 初始样式
+        // (el as HTMLElement).style.transform = 'translateY(30px)'; 
+      });
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+            // 保持观察，允许动画在滚动时重复触发，或者根据需要取消观察
+            // observer.unobserve(entry.target); 
+          }
+        });
+      }, {
+        threshold: 0.1, // 稍微降低阈值，确保更容易触发
+        rootMargin: '0px 0px -50px 0px' // 调整 rootMargin
+      });
+      
+      elements.forEach(el => {
+        observer.observe(el);
+      });
+      
+      // 清理函数：当组件卸载或依赖项变化时停止观察
+      return () => {
+        elements.forEach(el => {
+          observer.unobserve(el);
+        });
+        observer.disconnect(); // 确保完全断开观察器
+      };
+    }
+    // 当页面状态变化时（切换到/离开主页），重新运行此 effect
+  }, [showChat, showAuth, showPaidFeaturePage]); 
 
   // 添加平滑滚动到会员服务区域的函数
   const scrollToMemberSection = () => {
@@ -680,21 +702,6 @@ function App() {
   return (
     <div 
       className="min-h-screen bg-[#111111] text-gray-100"
-      onClick={() => {
-        // 如果当前是主页状态，确保主页内容可见
-        if (!showChat && !showAuth && !showPaidFeaturePage) {
-          // 强制显示主页内容
-          const mainElement = document.querySelector('main');
-          if (mainElement) {
-            mainElement.style.display = 'block';
-            mainElement.style.visibility = 'visible';
-            mainElement.style.opacity = '1';
-          }
-          
-          // 添加强制可见类
-          document.body.classList.add('force-visible');
-        }
-      }}
     >
       {error && (
         <div className="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center">
@@ -716,34 +723,42 @@ function App() {
       </div>
 
       {showPaidFeaturePage ? (
-        <PaidFeaturePage onClose={() => {
-          setShowPaidFeaturePage(false);
-          localStorage.setItem('force_reload_fix', 'true');
-          window.location.reload();
-        }} />
+        <PaidFeaturePage 
+          onClose={() => {
+            setShowPaidFeaturePage(false);
+            window.scrollTo(0, scrollY);
+          }} 
+          onLoginRequired={() => {
+            setLoginRedirectTarget('paidFeaturePage');
+            setShowPaidFeaturePage(false); 
+            setAuthMode('login');       
+            setShowAuth(true);          
+          }}
+          isUserPaid={isUserPaid}
+          hasUserPDF={hasUserPDF}
+        />
       ) : showAuth ? (
         <Auth 
-          onClose={() => {
+          onClose={(success?: boolean) => {
             setShowAuth(false);
-            
-            // 使用简单的window.location.reload()强制刷新页面
-            // 设置一个本地存储标记，以便在刷新后知道这是从登录页面返回
-            localStorage.setItem('force_reload_fix', 'true');
-            window.location.reload();
+            if (success && loginRedirectTarget === 'paidFeaturePage') {
+              setShowPaidFeaturePage(true);
+              setLoginRedirectTarget(null);
+            } else {
+              window.scrollTo(0, scrollY);
+              setLoginRedirectTarget(null);
+            }
           }}
           defaultMode={authMode}
           userEmail={userEmail}
           token={token}
+          onSetToken={handleSetToken}
         />
       ) : showChat ? (
         <Chat
           onBack={() => {
             setShowChat(false);
-            
-            // 使用简单的window.location.reload()强制刷新页面
-            // 设置一个本地存储标记，以便在刷新后知道这是从聊天页面返回
-            localStorage.setItem('force_reload_fix', 'true');
-            window.location.reload();
+            window.scrollTo(0, scrollY);
           }}
           currentMessages={currentMessages}
           chatHistory={chatHistory}
@@ -774,7 +789,6 @@ function App() {
               setError('网络错误，请检查后端服务是否运行');
             } finally {
               setIsTyping(false);
-              // 清理图片预览
               uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
               setUploadedImages([]);
             }
@@ -810,7 +824,7 @@ function App() {
                   <span className={`${scrollY > 100 ? 'text-sm sm:text-base' : 'text-base sm:text-lg'} font-medium transition-all duration-300`}>Happy Work</span>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
-                  {/* 修改导航按钮添加onClick */}
+                  {/* 付费功能按钮 (根据 isUserPaid 修改文本) */}
                   <button 
                     onClick={scrollToMemberSection}
                     className={`hidden md:flex items-center gap-1.5 px-3 ${scrollY > 100 ? 'py-1 text-xs' : 'py-1.5 text-sm'} 
@@ -823,15 +837,17 @@ function App() {
                       <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]" />
                     </div>
                     <Crown className={`${scrollY > 100 ? 'w-3 h-3' : 'w-4 h-4'} text-amber-800 group-hover:animate-pulse`} />
-                    <span className="relative z-10">专属付费功能</span>
-                    {/* 移动端显示的简化版本 */}
+                    {/* 条件渲染文本 */} 
+                    <span className="relative z-10">{isUserPaid ? '已开通专属付费功能' : '专属付费功能'}</span>
                   </button>
+                  {/* 移动端简化按钮 */} 
                   <button 
                     onClick={scrollToMemberSection}
                     className={`md:hidden flex items-center justify-center ${scrollY > 100 ? 'w-6 h-6' : 'w-7 h-7'} 
                     bg-gradient-to-r from-amber-500 to-yellow-300 text-black rounded-full 
                     transition-all duration-300 shadow-[0_0_10px_rgba(251,191,36,0.5)] hover:shadow-[0_0_15px_rgba(251,191,36,0.7)] 
                     hover:scale-105`}
+                    title={isUserPaid ? '已开通专属付费功能' : '专属付费功能'}
                   >
                     <Crown className="w-3 h-3 text-amber-800" />
                   </button>
@@ -842,7 +858,7 @@ function App() {
                         onClick={() => {
                           if (!userEmail) {
                             setError('正在获取用户信息，请稍后重试');
-                            fetchUserInfo(); // 尝试重新获取用户信息
+                            fetchUserInfo();
                             return;
                           }
                           setShowAuth(true);
@@ -1096,7 +1112,8 @@ function App() {
                   </div>
                   <span className="relative flex items-center justify-center gap-2 text-base">
                     <Crown className="w-5 h-5 text-amber-800" />
-                    查看详情
+                    {/* 条件渲染按钮文本 */} 
+                    {isUserPaid ? '查看我的方案' : '查看详情'}
                   </span>
                 </button>
               </div>
@@ -1158,8 +1175,7 @@ function App() {
 
           {/* Main Chat Interface */}
           <main 
-            className="max-w-5xl mx-auto px-4 pb-20 -mt-8 main-content-visible"
-            style={{display: !showChat && !showAuth && !showPaidFeaturePage ? 'block' : 'none'}}
+            className={`max-w-5xl mx-auto px-4 pb-20 -mt-8 ${!showChat && !showAuth && !showPaidFeaturePage ? 'main-content-visible' : 'main-content-hidden'}`}
           >
             <form onSubmit={async (e) => {
               e.preventDefault();
@@ -1195,7 +1211,6 @@ function App() {
                 setError('网络错误，请检查后端服务是否运行');
               } finally {
                 setIsTyping(false);
-                // 清理图片预览
                 uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
                 setUploadedImages([]);
               }
@@ -1327,7 +1342,6 @@ function App() {
                               onClick={() => {
                                 setShowSubmitMenu(false);
                                 setSubmitMode('simulation');
-                                // 使用setTimeout确保submitMode被设置后再提交
                                 setTimeout(() => {
                                   const form = document.querySelector('form');
                                   if (form) {
@@ -1348,7 +1362,6 @@ function App() {
                               onClick={() => {
                                 setShowSubmitMenu(false);
                                 setSubmitMode('solution');
-                                // 使用setTimeout确保submitMode被设置后再提交
                                 setTimeout(() => {
                                   const form = document.querySelector('form');
                                   if (form) {
@@ -1377,7 +1390,6 @@ function App() {
             {isTyping && (
               <div className="mt-6 text-center text-gray-400">
                 {(() => {
-                  // 优先使用当前聊天历史中的类型
                   const currentChat = currentChatId ? chatHistory.find(chat => chat.id === currentChatId) : null;
                   const chatType = currentChat?.type || submitMode;
                   return chatType === 'solution' ? '正在构思解决方案' : '正在还原PUA对话';

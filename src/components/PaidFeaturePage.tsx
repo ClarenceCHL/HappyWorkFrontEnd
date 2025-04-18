@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ShieldCheck, FileText, BrainCircuit, BarChart, Crown, Mail } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, ShieldCheck, FileText, BrainCircuit, BarChart, Crown, Mail, Download, RefreshCw, Edit3 } from 'lucide-react';
 import PaymentModal from './PaymentModal';
+
+// 临时的 API URL 和 Token 获取方式，后续应替换为实际实现
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; 
+// 修改 localStorage 的键名以匹配 App.tsx
+const getToken = () => localStorage.getItem('userToken');
 
 interface PaidFeaturePageProps {
   onClose: () => void;
+  onLoginRequired: () => void;
+  isUserPaid: boolean;
+  hasUserPDF: boolean;
 }
 
-const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose }) => {
+const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequired, isUserPaid, hasUserPDF }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -28,21 +36,66 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose }) => {
     // alert("正在打开 PayPal 支付页面...");
   };
 
-  const handleFreeAccess = () => {
+  const handleFreeAccess = async () => {
     console.log("处理限时免费访问...");
-    // 在这里添加后续逻辑，例如关闭模态框并显示成功信息或跳转
-    handleClosePaymentModal();
-    // 示例：显示一个成功提示 (需要添加对应的 state 和 useEffect)
-    setSuccessMessage('限时免费访问成功！即将进入下一步...');
-    setShowSuccessToast(true);
-    setTimeout(() => {
-      setShowSuccessToast(false);
-      // 这里可以添加跳转到问卷页面的逻辑
-      // alert("跳转到问卷页面 (功能待实现)");
-    }, 2700);
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+    const token = getToken();
+
+    if (!token) {
+      onLoginRequired();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/activate-free-access`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({}) // POST 请求通常需要 body，即使是空的
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.status === 'success') {
+        console.log("免费访问激活成功:", result.message);
+        // 在这里添加后续逻辑，例如关闭模态框并显示成功信息或跳转
+        handleClosePaymentModal();
+        // 示例：显示一个成功提示
+        setSuccessMessage('限时免费访问成功！即将进入下一步...');
+        setShowSuccessToast(true);
+        setTimeout(() => {
+          setShowSuccessToast(false);
+          // 这里可以添加跳转到问卷页面的逻辑 (如果需要)
+          // alert("跳转到问卷页面 (功能待实现)"); 
+        }, 2700);
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 3000);
+      } else {
+        console.error("免费访问激活失败:", result.message);
+        alert(`激活失败: ${result.message || '请稍后再试'}`);
+      }
+    } catch (error) {
+      console.error("调用免费访问 API 时出错:", error);
+      alert("请求失败，请检查网络连接或稍后再试。");
+    }
+  };
+
+  const handleDownloadReport = () => {
+    console.log("触发下载/预览报告逻辑 (待实现)");
+    alert("下载功能正在开发中...");
+  };
+
+  const handleGenerateAgain = () => {
+    console.log("触发另外生成逻辑 (待实现)");
+    alert("重新生成功能需要引导用户返回问卷，正在开发中...");
+  };
+
+  const handleGenerateReport = () => {
+    console.log("触发生成报告逻辑 (待实现)");
+    alert("生成报告功能需要引导用户完成问卷，正在开发中...");
+    // 可能需要导航到问卷页面
   };
 
   return (
@@ -144,35 +197,80 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose }) => {
             </div>
           </section>
 
-          {/* Pricing and CTA */}
-          <section className="flex flex-col sm:flex-row items-center justify-center gap-x-8 gap-y-4 mb-12 md:mb-16 animate-fade-in-up animation-delay-700">
-            {/* Price Box */}
-            <div className="bg-gradient-to-r from-amber-500 to-yellow-300 p-1 rounded-lg shadow-lg relative group/price">
-              <div className="bg-[#1a1a1a] px-6 py-4 rounded-md relative">
-                <p className="text-lg font-medium text-amber-300 mb-1">一次付费，永久下载</p>
-                <p className="text-4xl md:text-5xl font-bold text-white relative">
-                  ¥20
-                  <span 
-                    className="absolute left-0 right-0 top-1/2 h-0.5 bg-red-500 transform -translate-y-1/2 scale-x-0 group-hover/cta:scale-x-100 transition-transform duration-300 origin-left"
-                    aria-hidden="true"
-                  ></span>
-                </p>
+          {/* 条件渲染 CTA 区域 */}
+          {isUserPaid ? (
+            hasUserPDF ? (
+              // --- 已付费且已有 PDF 用户视图 ---
+              <section className="flex flex-col items-center justify-center gap-4 mb-12 md:mb-16 animate-fade-in-up animation-delay-700">
+                <h2 className="text-2xl font-semibold text-center text-amber-300 mb-4">
+                  您已开通专属服务
+                </h2>
+                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg">
+                  {/* 预览/下载按钮 */}
+                  <button
+                    onClick={handleDownloadReport}
+                    className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold text-base hover:shadow-[0_0_15px_rgba(96,165,250,0.5)] transition-all duration-300 hover:scale-105 relative overflow-hidden group flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-5 h-5 group-hover:animate-bounce" />
+                    预览/下载我的《人设战略破局职场PUA》
+                  </button>
+                  {/* 另外生成按钮 */}
+                  <button
+                    onClick={handleGenerateAgain}
+                    className="w-full px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold text-base transition-all duration-300 hover:scale-105 relative flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    另外生成
+                  </button>
+                </div>
+              </section>
+            ) : (
+              // --- 已付费但无 PDF 用户视图 ---
+              <section className="flex flex-col items-center justify-center gap-4 mb-12 md:mb-16 animate-fade-in-up animation-delay-700">
+                 <h2 className="text-2xl font-semibold text-center text-amber-300 mb-4">
+                  您已开通专属服务
+                </h2>
+                <button
+                  onClick={handleGenerateReport}
+                  className="w-full max-w-md px-6 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold text-base hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] transition-all duration-300 hover:scale-105 relative overflow-hidden group flex items-center justify-center gap-2"
+                >
+                  <Edit3 className="w-5 h-5" />
+                  生成属于我的《人设战略破局职场PUA》
+                </button>
+                 <p className="text-sm text-gray-400 mt-2">（需先完成一份匿名问卷）</p>
+              </section>
+            )
+          ) : (
+            // --- 未付费用户视图 (原始逻辑) ---
+            <section className="flex flex-col sm:flex-row items-center justify-center gap-x-8 gap-y-4 mb-12 md:mb-16 animate-fade-in-up animation-delay-700">
+              {/* Price Box */}
+              <div className="bg-gradient-to-r from-amber-500 to-yellow-300 p-1 rounded-lg shadow-lg relative group/price">
+                <div className="bg-[#1a1a1a] px-6 py-4 rounded-md relative">
+                  <p className="text-lg font-medium text-amber-300 mb-1">一次付费，永久下载</p>
+                  <p className="text-4xl md:text-5xl font-bold text-white relative">
+                    ¥20
+                    <span 
+                      className="absolute left-0 right-0 top-1/2 h-0.5 bg-red-500 transform -translate-y-1/2 scale-x-0 group-hover/cta:scale-x-100 transition-transform duration-300 origin-left"
+                      aria-hidden="true"
+                    ></span>
+                  </p>
+                </div>
               </div>
-            </div>
-            {/* CTA Button */}
-            <button
-              onClick={handleOpenPaymentModal}
-              className="px-8 py-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-bold text-lg hover:shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all duration-300 hover:scale-105 relative overflow-hidden group/cta"
-            >
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]" />
-              </div>
-              <span className="relative flex items-center justify-center gap-2">
-                <Crown className="w-6 h-6 text-amber-800" />
-                限时免费！<span className="line-through opacity-70">立即购买</span>
-              </span>
-            </button>
-          </section>
+              {/* CTA Button */}
+              <button
+                onClick={handleOpenPaymentModal}
+                className="px-8 py-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-bold text-lg hover:shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all duration-300 hover:scale-105 relative overflow-hidden group/cta"
+              >
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]" />
+                </div>
+                <span className="relative flex items-center justify-center gap-2">
+                  <Crown className="w-6 h-6 text-amber-800" />
+                  限时免费！<span className="line-through opacity-70">立即购买</span>
+                </span>
+              </button>
+            </section>
+          )}
 
           {/* Footer */}
           <footer className="text-center text-gray-500 text-sm animate-fade-in animation-delay-800 pb-6">
@@ -185,13 +283,15 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose }) => {
         </div>
       </div>
 
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={handleClosePaymentModal}
-        onPay={handlePayment}
-        onFreeAccess={handleFreeAccess}
-      />
+      {/* Payment Modal (仅在未付费时需要打开) */}
+      {!isUserPaid && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={handleClosePaymentModal}
+          onPay={handlePayment}
+          onFreeAccess={handleFreeAccess}
+        />
+      )}
 
       {/* Add CSS for modal animations (if not already globally defined) */}
       {/* @ts-ignore */}
