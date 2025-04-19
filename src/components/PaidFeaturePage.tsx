@@ -47,6 +47,15 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
     };
   }, [isUserPaid, isPaymentModalOpen]);
 
+  // 新增：组件挂载时检查一次支付状态，确保支付后的状态同步
+  useEffect(() => {
+    // 如果用户未标记为已付费，手动检查一次支付状态
+    if (!isUserPaid) {
+      console.log("组件挂载时检查一次支付状态");
+      checkPaymentStatus();
+    }
+  }, []); // 空依赖数组确保只在组件挂载时执行一次
+
   // 启动支付状态检查
   const startPaymentCheck = () => {
     if (paymentCheckInterval) return; // 如果已经在检查，不要重复启动
@@ -146,9 +155,10 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
     // 原有支付逻辑 (当前是打开 PayPal 链接)
     const paypalMeLink = "https://www.paypal.com/paypalme/HappyWorkFkPUA";
     window.open(paypalMeLink, '_blank'); // 在新标签页打开支付链接
-    // Consider closing the modal after opening the link, or providing user feedback
-    // handleClosePaymentModal(); 
-    // alert("正在打开 PayPal 支付页面...");
+    
+    // 关闭支付模态框，并开始检查支付状态
+    handleClosePaymentModal();
+    alert("支付页面已在新标签页打开。完成支付后，请返回此页面查看状态更新。");
   };
 
   const handleFreeAccess = async () => {
@@ -278,6 +288,17 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
       >
         <span className="text-sm font-medium">{successMessage}</span>
       </div>
+
+      {/* 新增：支付检查中的加载指示器 */}
+      {!isUserPaid && isCheckingPayment && (
+        <div className="fixed top-16 left-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center z-50">
+          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="text-sm font-medium">正在检查支付状态...</span>
+        </div>
+      )}
 
       <div className="min-h-screen bg-gradient-to-b from-[#1a1a1a] to-[#111111] text-gray-100 p-6 md:p-10 relative overflow-hidden">
         {/* Background Glows */}

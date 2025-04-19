@@ -722,30 +722,6 @@ function App() {
     // setHasUserPDF(false); 
   };
 
-  // 添加消息监听器以处理支付窗口发送的消息
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // 确保消息来源安全
-      if (event.data && typeof event.data === 'object') {
-        if (event.data.type === 'PAYMENT_COMPLETED' || event.data.type === 'PAYMENT_SUCCESS') {
-          console.log('收到支付成功消息');
-          // 更新支付状态
-          handlePaymentSuccess();
-          // 刷新用户信息
-          fetchUserInfo();
-        }
-      }
-    };
-
-    // 添加消息监听器
-    window.addEventListener('message', handleMessage);
-
-    // 清理函数
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, []);
-
   // --- 身份验证相关处理 ---
   const handleAuthSuccess = (email: string, newToken: string, message: string) => {
     // 1. 更新 Token (会同步更新 localStorage)
