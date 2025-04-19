@@ -7,15 +7,20 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 // 修改 localStorage 的键名以匹配 App.tsx
 const getToken = () => localStorage.getItem('userToken');
 
+// 定义 App.tsx 中的 PageType 类型，确保一致
+type PageType = 'home' | 'chat' | 'auth' | 'paidFeature';
+
 interface PaidFeaturePageProps {
   onClose: () => void;
-  onLoginRequired: () => void;
+  // 修改 onLoginRequired 的类型，使其接受 PageType 参数
+  onLoginRequired: (returnTo: PageType) => void;
   isUserPaid: boolean;
   hasUserPDF: boolean;
   onPaymentSuccess: () => void;
+  onNavigateToQuestionnaire: () => void; // 新增：用于导航到问卷页面的回调
 }
 
-const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequired, isUserPaid, hasUserPDF, onPaymentSuccess }) => {
+const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequired, isUserPaid, hasUserPDF, onPaymentSuccess, onNavigateToQuestionnaire }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -29,9 +34,18 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
   };
 
   const handlePayment = () => {
+    // 新增：检查用户是否登录
+    const token = getToken();
+    if (!token) {
+      // 调用登录回调，并指定返回目标为 'paidFeature'
+      onLoginRequired('paidFeature'); 
+      handleClosePaymentModal(); // 关闭支付弹窗
+      return; // 阻止后续支付逻辑
+    }
+
+    // 原有支付逻辑 (当前是打开 PayPal 链接)
     const paypalMeLink = "https://www.paypal.com/paypalme/HappyWorkFkPUA";
-    // Open the PayPal link in a new tab
-    window.open(paypalMeLink, '_blank', 'noopener,noreferrer');
+    window.open(paypalMeLink, '_blank'); // 在新标签页打开支付链接
     // Consider closing the modal after opening the link, or providing user feedback
     // handleClosePaymentModal(); 
     // alert("正在打开 PayPal 支付页面...");
@@ -42,7 +56,8 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
     const token = getToken();
 
     if (!token) {
-      onLoginRequired();
+      // 调用登录回调，并指定返回目标为 'paidFeature'
+      onLoginRequired('paidFeature'); 
       return;
     }
 
@@ -85,19 +100,74 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
     }
   };
 
-  const handleDownloadReport = () => {
-    console.log("触发下载/预览报告逻辑 (待实现)");
-    alert("下载功能正在开发中...");
+  const handleDownloadReport = async () => {
+    console.log("触发下载/预览报告逻辑");
+    const token = getToken();
+
+    if (!token) {
+      onLoginRequired('paidFeature'); 
+      return;
+    }
+
+    try {
+      // 首先获取用户提交的最新问卷
+      const response = await fetch(`${API_BASE_URL}/user/questionnaires`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('获取问卷列表失败');
+      }
+
+      const data = await response.json();
+      
+      if (data.status === 'error') {
+        alert(`错误: ${data.message}`);
+        return;
+      }
+
+      if (!data.questionnaires || data.questionnaires.length === 0) {
+        alert('您还没有提交问卷，请先完成问卷');
+        onNavigateToQuestionnaire(); // 跳转到问卷页面
+        return;
+      }
+
+      // 获取最新的问卷报告
+      const latestQuestionnaire = data.questionnaires[0];
+      
+      if (!latestQuestionnaire.has_report) {
+        alert('您的报告还在生成中，请稍后再试');
+        return;
+      }
+
+      const previewLink = latestQuestionnaire.preview_link;
+      
+      // 跳转到预览页面
+      if (previewLink) {
+        window.open(`${API_BASE_URL}${previewLink}`, '_blank');
+      } else {
+        alert('预览链接不可用，请重新生成报告');
+      }
+    } catch (error) {
+      console.error('获取报告失败:', error);
+      alert('获取报告失败，请稍后再试');
+    }
   };
 
   const handleGenerateAgain = () => {
-    console.log("触发另外生成逻辑 (待实现)");
-    alert("重新生成功能需要引导用户返回问卷，正在开发中...");
+    console.log("触发另外生成逻辑");
+    // alert("重新生成功能需要引导用户返回问卷，正在开发中...");
+    onNavigateToQuestionnaire(); // 跳转到问卷页面
   };
 
   const handleGenerateReport = () => {
-    console.log("触发生成报告逻辑 (待实现)");
-    alert("生成报告功能需要引导用户完成问卷，正在开发中...");
+    console.log("触发生成报告逻辑");
+    // alert("生成报告功能需要引导用户完成问卷，正在开发中...");
+    onNavigateToQuestionnaire(); // 跳转到问卷页面
     // 可能需要导航到问卷页面
   };
 

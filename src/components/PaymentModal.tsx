@@ -55,13 +55,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
 
           {/* Payment Buttons */}
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            {/* PayPal Button */}
+            {/* Payment Button */}
             <button
               onClick={onPay}
-              className="w-full sm:w-auto bg-white hover:bg-gray-100 text-black font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-md hover:scale-105"
-              title="通过 PayPal 支付"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-md hover:scale-105"
+              title="通过微信/支付宝/Stripe支付"
             >
-              <img src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-200px.png" alt="PayPal Logo" className="h-6" />
+              <span>微信/支付宝/Stripe</span>
             </button>
             
             {/* Limited Time Free Button */}

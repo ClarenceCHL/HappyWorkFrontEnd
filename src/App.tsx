@@ -3,6 +3,7 @@ import { MessageSquare, Shield, AlertTriangle, History, Image as ImageIcon, X, P
 import { Auth } from './components/Auth';
 import { Chat, Message as ChatMessage } from './components/Chat';
 import PaidFeaturePage from './components/PaidFeaturePage';
+import QuestionnairePage from './components/QuestionnairePage';
 import heroImage from './assets/hero-image.png';
 import './styles.css';
 
@@ -54,6 +55,12 @@ interface Chat {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// 定义页面类型
+type PageType = 'home' | 'chat' | 'auth' | 'paidFeature' | 'questionnaire';
+
+// 定义认证模式类型 (AuthMode)
+type AuthMode = 'login' | 'register' | 'changePassword';
+
 function App() {
   const [formData, setFormData] = useState<FormData>({
     puaType: [],
@@ -82,7 +89,9 @@ function App() {
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showPaidFeaturePage, setShowPaidFeaturePage] = useState(false);
+  const [showQuestionnairePage, setShowQuestionnairePage] = useState(false);
   const [loginRedirectTarget, setLoginRedirectTarget] = useState<string | null>(null);
+  const [loginReturnTarget, setLoginReturnTarget] = useState<PageType | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -127,7 +136,7 @@ function App() {
   // 在切换页面时清理错误信息
   useEffect(() => {
     setError('');
-  }, [showChat, showAuth, showPaidFeaturePage]);
+  }, [showChat, showAuth, showPaidFeaturePage, showQuestionnairePage]);
 
   // 添加点击外部关闭下拉菜单的功能
   useEffect(() => {
@@ -174,6 +183,8 @@ function App() {
       // 强制重置页面状态
       setShowChat(false);
       setShowAuth(false);
+      setShowPaidFeaturePage(false);
+      setShowQuestionnairePage(false);
       
       // 强制页面重新渲染主要内容
       const mainSection = document.querySelector('main');
@@ -195,7 +206,7 @@ function App() {
 
   // 处理页面初始加载和切换
   useEffect(() => {
-    if (!showChat && !showAuth && !showPaidFeaturePage) {
+    if (!showChat && !showAuth && !showPaidFeaturePage && !showQuestionnairePage) {
       // 确保主页内容在返回时可见
       const mainContent = document.querySelector('main');
       if (mainContent) {
@@ -209,7 +220,7 @@ function App() {
         nav.style.transform = 'translateY(0)';
       }
     }
-  }, [showChat, showAuth, showPaidFeaturePage]);
+  }, [showChat, showAuth, showPaidFeaturePage, showQuestionnairePage]);
 
   // 在应用加载时处理从登录页刷新的情况
   useEffect(() => {
@@ -613,7 +624,7 @@ function App() {
   // 将滚动动画逻辑移入 App 组件
   useEffect(() => {
     // 仅当显示主页时才设置滚动动画
-    if (!showChat && !showAuth && !showPaidFeaturePage) {
+    if (!showChat && !showAuth && !showPaidFeaturePage && !showQuestionnairePage) {
       const elements = document.querySelectorAll('.scroll-animate');
       
       // 重置动画状态，以便返回时能重新播放
@@ -651,7 +662,7 @@ function App() {
       };
     }
     // 当页面状态变化时（切换到/离开主页），重新运行此 effect
-  }, [showChat, showAuth, showPaidFeaturePage]); 
+  }, [showChat, showAuth, showPaidFeaturePage, showQuestionnairePage]); 
 
   // 添加平滑滚动到会员服务区域的函数
   const scrollToMemberSection = () => {
@@ -673,7 +684,7 @@ function App() {
 
   // 添加处理主页面元素可见性的效果
   useEffect(() => {
-    if (!showChat && !showAuth && !showPaidFeaturePage) {
+    if (!showChat && !showAuth && !showPaidFeaturePage && !showQuestionnairePage) {
       // 这是主页状态，确保所有元素可见
       // 给页面添加loaded类，用于CSS控制可见性
       document.body.classList.add('home-loaded');
@@ -697,7 +708,7 @@ function App() {
       // 非主页状态，移除类
       document.body.classList.remove('home-loaded');
     }
-  }, [showChat, showAuth, showPaidFeaturePage]);
+  }, [showChat, showAuth, showPaidFeaturePage, showQuestionnairePage]);
 
   // 新增：处理支付成功的回调函数
   const handlePaymentSuccess = () => {
@@ -705,6 +716,135 @@ function App() {
     setIsUserPaid(true);
     // 可选：如果支付成功意味着 PDF 肯定还没生成，也可以在这里重置
     // setHasUserPDF(false); 
+  };
+
+  // --- 身份验证相关处理 ---
+  const handleAuthSuccess = (email: string, newToken: string, message: string) => {
+    // 1. 更新 Token (会同步更新 localStorage)
+    handleSetToken(newToken);
+    setUserEmail(email);
+    setShowAuth(false); // 关闭认证模态框
+
+    // 2. 显示成功消息
+    setSuccessMessage(message);
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 2700);
+    setTimeout(() => setSuccessMessage(''), 3000);
+
+    // 3. 导航到目标页面
+    if (loginReturnTarget === 'paidFeature') {
+      setShowPaidFeaturePage(true); // 明确显示付费页面
+      setShowChat(false);
+      setShowQuestionnairePage(false);
+    } else {
+      // 默认行为或处理其他可能的 returnTarget
+      // 当前默认留在主页，关闭其他页面
+      setShowPaidFeaturePage(false);
+      setShowChat(false);
+      setShowQuestionnairePage(false);
+    }
+    setLoginReturnTarget(null); // 清除返回目标
+    window.scrollTo(0, 0); // 滚动到顶部
+
+    // 4. 刷新用户信息和聊天记录 (异步)
+    fetchUserInfo();
+    fetchChatHistory();
+  };
+
+  const handleLogout = () => {
+    handleSetToken(null); // 清除 token 和相关状态
+    setCurrentMessages([]);
+    setChatHistory([]);
+    setShowChat(false);
+    setShowAuth(false);
+    setShowPaidFeaturePage(false);
+    setShowQuestionnairePage(false);
+    setLoginReturnTarget(null);
+    console.log("用户已登出");
+    setSuccessMessage('您已成功登出。');
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 2700);
+    setTimeout(() => setSuccessMessage(''), 3000);
+    window.scrollTo(0, 0);
+  };
+
+  const handleAuthClose = () => {
+    setShowAuth(false);
+    // 如果是从特定页面要求登录后关闭了登录框，则返回该页面
+    if (loginReturnTarget === 'paidFeature') {
+      setShowPaidFeaturePage(true);
+      // 确保其他页面关闭
+      setShowChat(false);
+      setShowQuestionnairePage(false);
+    } else {
+      // 否则，默认返回主页 (确保其他页面关闭)
+      setShowPaidFeaturePage(false);
+      setShowChat(false);
+      setShowQuestionnairePage(false);
+    }
+    setLoginReturnTarget(null); // 清除返回目标
+    window.scrollTo(0, 0);
+  };
+
+  const handleOpenAuth = (mode: 'login' | 'register' | 'changePassword', returnTo?: PageType) => {
+    setAuthMode(mode);
+    setLoginReturnTarget(returnTo || null); // 设置返回目标
+    // 关闭所有其他页面，显示认证页面
+    setShowChat(false); 
+    setShowPaidFeaturePage(false);
+    setShowQuestionnairePage(false);
+    setShowAuth(true);
+    window.scrollTo(0, 0);
+  };
+
+  // --- 页面导航 --- 
+  const handleNavigateToPaidFeature = () => {
+    if (!token) {
+      handleOpenAuth('login', 'paidFeature'); 
+    } else {
+      setShowPaidFeaturePage(true);
+      setShowChat(false);
+      setShowAuth(false);
+      setShowQuestionnairePage(false);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  // 4. 实现导航到问卷页面的函数
+  const handleNavigateToQuestionnaire = () => {
+    setShowQuestionnairePage(true);
+    setShowPaidFeaturePage(false);
+    setShowChat(false);
+    setShowAuth(false);
+    window.scrollTo(0, 0);
+  };
+
+  // 5. 实现从问卷页面返回的函数
+  const handleQuestionnaireBack = () => {
+    setShowQuestionnairePage(false);
+    setShowPaidFeaturePage(true);
+    window.scrollTo(0, 0);
+  };
+
+  // 6. 实现处理问卷提交的函数 (Placeholder)
+  const handleQuestionnaireSubmit = (answers: any) => {
+    console.log("问卷已提交，答案:", answers);
+    // TODO: 在这里添加调用后端 API 生成报告的逻辑
+    // 假设 API 调用成功后...
+    setHasUserPDF(true); // 更新状态，表示用户现在有 PDF 了
+    setShowQuestionnairePage(false);
+    setShowPaidFeaturePage(true);
+    // 显示成功消息
+    setSuccessMessage('报告生成请求已提交！请稍后在付费页面查看。');
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 3000);
+    setTimeout(() => setSuccessMessage(''), 3300);
+  };
+
+  // 修改 PaidFeaturePage 的 onLoginRequired 回调
+  const handleLoginRequiredForPaidFeature = (returnTo: PageType) => {
+    // 这个函数在 PaidFeaturePage 中被调用
+    handleOpenAuth('login', returnTo); 
   };
 
   return (
@@ -730,38 +870,32 @@ function App() {
         <span className="text-sm font-medium">{successMessage}</span>
       </div>
 
-      {showPaidFeaturePage ? (
+      {showQuestionnairePage ? (
+        <QuestionnairePage 
+          onBack={handleQuestionnaireBack}
+          onSubmit={handleQuestionnaireSubmit}
+        />
+      ) : showPaidFeaturePage ? (
         <PaidFeaturePage 
           onClose={() => {
             setShowPaidFeaturePage(false);
-            window.scrollTo(0, scrollY);
-          }} 
-          onLoginRequired={() => {
-            setLoginRedirectTarget('paidFeaturePage');
-            setShowPaidFeaturePage(false); 
-            setAuthMode('login');       
-            setShowAuth(true);          
+            // 返回主页，确保其他页面关闭
+            setShowChat(false);
+            setShowAuth(false);
+            setShowQuestionnairePage(false);
           }}
+          onLoginRequired={handleLoginRequiredForPaidFeature}
           isUserPaid={isUserPaid}
           hasUserPDF={hasUserPDF}
           onPaymentSuccess={handlePaymentSuccess}
+          onNavigateToQuestionnaire={handleNavigateToQuestionnaire}
         />
       ) : showAuth ? (
         <Auth 
-          onClose={(success?: boolean) => {
-            setShowAuth(false);
-            if (success && loginRedirectTarget === 'paidFeaturePage') {
-              setShowPaidFeaturePage(true);
-              setLoginRedirectTarget(null);
-            } else {
-              window.scrollTo(0, scrollY);
-              setLoginRedirectTarget(null);
-            }
-          }}
-          defaultMode={authMode}
-          userEmail={userEmail}
-          token={token}
-          onSetToken={handleSetToken}
+          mode={authMode} 
+          onClose={handleAuthClose}
+          onSuccess={handleAuthSuccess}
+          onSwitchMode={(newMode: AuthMode) => setAuthMode(newMode)}
         />
       ) : showChat ? (
         <Chat
@@ -843,13 +977,13 @@ function App() {
                   >
                     {/* 光效背景 */}
                     <div className="absolute inset-0 overflow-hidden">
-                      <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]" />
+                      <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_100%]"></div>
                     </div>
                     <Crown className={`${scrollY > 100 ? 'w-3 h-3' : 'w-4 h-4'} text-amber-800 group-hover:animate-pulse`} />
-                    {/* 条件渲染文本 */} 
+                    {/* 条件渲染文本 */}
                     <span className="relative z-10">{isUserPaid ? '已开通专属付费功能' : '专属付费功能'}</span>
                   </button>
-                  {/* 移动端简化按钮 */} 
+                  {/* 移动端简化按钮 */}
                   <button 
                     onClick={scrollToMemberSection}
                     className={`md:hidden flex items-center justify-center ${scrollY > 100 ? 'w-6 h-6' : 'w-7 h-7'} 
@@ -930,7 +1064,7 @@ function App() {
                 <div className="absolute inset-0 animate-shine bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.3)_50%,transparent_75%)] bg-[length:300%_100%]" />
                 <div className="absolute inset-0 animate-shimmer opacity-50 bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.1)_50%,transparent_75%)] bg-[length:300%_100%]" />
               </div>
-              <span className="relative z-10 text-xs sm:text-sm md:text-base">专属付费功能开发中，敬请期待</span>
+              <span className="relative z-10 text-xs sm:text-sm md:text-base">UPDATE: 专属付费功能限时免费中</span>
             </div>
           </div>
 
@@ -1184,7 +1318,7 @@ function App() {
 
           {/* Main Chat Interface */}
           <main 
-            className={`max-w-5xl mx-auto px-4 pb-20 -mt-8 ${!showChat && !showAuth && !showPaidFeaturePage ? 'main-content-visible' : 'main-content-hidden'}`}
+            className={`max-w-5xl mx-auto px-4 pb-20 -mt-8 ${!showChat && !showAuth && !showPaidFeaturePage && !showQuestionnairePage ? 'main-content-visible' : 'main-content-hidden'}`}
           >
             <form onSubmit={async (e) => {
               e.preventDefault();

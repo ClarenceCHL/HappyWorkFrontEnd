@@ -4,45 +4,41 @@ import { Shield, ArrowLeft, Eye, EyeOff, X } from 'lucide-react';
 // 使用type guard函数来检查模式
 const isChangePasswordMode = (mode: string): boolean => mode === 'changePassword';
 
+// 定义 AuthMode 类型
+type AuthMode = 'login' | 'register' | 'changePassword';
+
 interface AuthProps {
-  onClose: (success?: boolean) => void;
-  defaultMode: 'login' | 'register' | 'changePassword';
-  userEmail?: string | null;
-  token?: string | null;
-  onSetToken: (token: string | null) => void;
+  onClose: () => void;
+  mode: AuthMode;
+  onSuccess: (email: string, token: string, message: string) => void;
+  onSwitchMode: (newMode: AuthMode) => void;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, token, onSetToken }) => {
-  const [identifier, setIdentifier] = useState(isChangePasswordMode(defaultMode) && userEmail ? userEmail : '');
+export const Auth: React.FC<AuthProps> = ({ onClose, mode, onSuccess, onSwitchMode }) => {
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [mode, setMode] = useState<'login' | 'register' | 'changePassword'>(defaultMode);
   const [isCodeLogin, setIsCodeLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
-    if (isChangePasswordMode(mode) && userEmail) {
-      setIdentifier(userEmail);
-    } else if (mode === 'login' || mode === 'register') {
-      if (!isChangePasswordMode(defaultMode)) {
-        setIdentifier('');
-      }
-    }
     setError('');
     setPassword('');
     setConfirmPassword('');
     setCode('');
     setCountdown(0);
     setIsCodeLogin(false);
-  }, [mode, userEmail, defaultMode]);
+    setSuccessMessage('');
+    setIdentifier('');
+  }, [mode]);
 
   const handleSendCode = async () => {
     if (!identifier) {
@@ -139,15 +135,12 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
       const data = await response.json();
 
       if (data.status === 'success' && data.token) {
-        onSetToken(data.token);
-        onClose(true);
+        onSuccess(identifier, data.token, '登录成功！');
       } else {
         setError(data.message || '登录失败');
-        onSetToken(null);
       }
     } catch (err) {
       setError('网络错误，请稍后重试');
-      onSetToken(null);
     } finally {
       setLoading(false);
     }
@@ -210,7 +203,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
         setCode('');
         setTimeout(() => {
           setSuccessMessage('');
-          setMode('login');
+          onSwitchMode('login');
         }, 1500);
       } else {
         setError(data.message || '注册失败，请重试');
@@ -253,7 +246,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${identifier}`
         },
         body: JSON.stringify({
           newPassword: password,
@@ -294,15 +287,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
               </h2>
             </div>
             <button
-              onClick={() => {
-                if (token) {
-                  localStorage.setItem('temp_token', token);
-                }
-                
-                localStorage.setItem('force_reload_fix', 'true');
-                
-                window.location.href = window.location.origin + window.location.pathname;
-              }}
+              onClick={() => onClose()}
               className="text-gray-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -366,7 +351,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
                     </button>
                     <button
                       type="button"
-                      onClick={() => setMode('register')}
+                      onClick={() => onSwitchMode('register')}
                       className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
                     >
                       没有账户？注册
@@ -411,7 +396,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
                     </button>
                     <button
                       type="button"
-                      onClick={() => setMode('register')}
+                      onClick={() => onSwitchMode('register')}
                       className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
                     >
                       没有账户？注册
@@ -512,7 +497,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setMode('login')}
+                  onClick={() => onSwitchMode('login')}
                   className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
                 >
                   已有账户？登录
@@ -532,7 +517,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, defaultMode, userEmail, tok
           {mode === 'changePassword' && (
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div className="text-gray-400 text-sm mb-4">
-                {userEmail ? `您正在修改账户 ${userEmail} 的密码` : '请填写以下信息修改密码'}
+                {identifier ? `您正在修改账户 ${identifier} 的密码` : '请填写以下信息修改密码'}
               </div>
               
               <div className="relative">
