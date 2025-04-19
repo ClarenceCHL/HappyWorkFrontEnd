@@ -26,16 +26,17 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
 
-  // 检查支付状态
+  // 检查支付状态 (这个函数现在由手动触发调用)
   const checkPaymentStatus = async () => {
     const token = getToken();
     if (!token) {
-      // 如果没有 token，可能需要提示用户重新登录
+      // 如果本地没有 token，肯定需要登录
+      console.log("本地无 Token，跳转登录");
       onLoginRequired('paidFeature');
-      return false; // 指示检查失败
+      return false; 
     }
 
-    if (isCheckingPayment) return false; // 防止重复请求
+    if (isCheckingPayment) return false; 
     
     setIsCheckingPayment(true);
     console.log("手动检查支付状态...");
@@ -47,30 +48,68 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
+      // 首先检查 HTTP 状态码
+      if (!response.ok) {
+        // 尝试解析错误响应体
+        let errorMsg = `服务器错误: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+          // 检查是否是认证错误 (401, 403等)
+          if (response.status === 401 || response.status === 403 || errorMsg.includes("无效") || errorMsg.includes("过期") || errorMsg.includes("授权")) {
+            console.error("认证失败或Token过期，跳转登录:", errorMsg);
+            alert("登录状态无效或已过期，请重新登录。");
+            onLoginRequired('paidFeature');
+            return false;
+          }
+        } catch (e) {
+          // 如果响应体不是 JSON 或解析失败
+          console.error("无法解析错误响应体 或 非认证错误:", response.status, response.statusText);
+        }
+        alert(`检查支付状态失败: ${errorMsg}`);
+        return false;
+      }
+
+      // 如果 HTTP 状态码 OK (2xx)，解析 JSON
       const data = await response.json();
       
+      // 检查业务逻辑状态
       if (data.status === 'success' && data.is_paid) {
         console.log("检测到支付成功，更新状态");
         onPaymentSuccess(); // 更新App.tsx中的状态
         
-        // 显示成功消息
         setSuccessMessage('支付已确认，感谢您的支持！');
         setShowSuccessToast(true);
-        setTimeout(() => {
-          setShowSuccessToast(false);
-        }, 3000);
+        setTimeout(() => setShowSuccessToast(false), 3000);
 
         return true; // 指示支付成功
-      } else {
-        // 如果后端返回未支付，则提示用户
-        console.log("支付状态未确认或检查失败");
-        alert("尚未检测到您的支付信息，请稍后再试或联系客服。");
+      } else if (data.status === 'success' && !data.is_paid) {
+        console.log("支付状态未确认 (is_paid: false)");
+        alert("尚未检测到您的支付信息。如果您已支付，请稍后再试或联系客服。");
         return false; // 指示支付未成功
+      } else if (data.status === 'error') {
+         // 后端返回业务错误，检查是否是认证相关
+         console.error("检查支付状态失败 (后端返回错误):", data.message);
+         const message = data.message || "未知错误";
+         if (message.includes("无效") || message.includes("过期") || message.includes("授权")) {
+           alert("登录状态无效或已过期，请重新登录。");
+           onLoginRequired('paidFeature');
+         } else {
+           alert(`检查支付状态失败: ${message}`);
+         }
+         return false; // 指示检查失败
+      } else {
+        // 非预期的成功响应格式
+        console.error("检查支付状态收到意外成功响应:", data);
+        alert("检查支付状态时收到服务器意外响应，请稍后再试。");
+        return false;
       }
+
     } catch (error) {
-      console.error("检查支付状态出错:", error);
-      alert("检查支付状态时发生错误，请稍后再试。");
+      // 网络错误或其他 fetch 异常
+      console.error("检查支付状态出错 (网络/Fetch):", error);
+      alert("检查支付状态时发生网络错误，请检查您的网络连接或稍后再试。");
       return false; // 指示检查失败
     } finally {
       setIsCheckingPayment(false);
