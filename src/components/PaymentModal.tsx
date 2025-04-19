@@ -20,8 +20,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
   const handleStripeCheckout = async () => {
     try {
       console.log('准备直接跳转到Stripe支付页面...');
-      // 使用用户提供的正确Stripe支付链接
-      const stripeCheckoutUrl = "https://buy.stripe.com/14kaGL2LZ2vC2RyfYY";
+      // 从环境变量获取支付链接
+      const stripeCheckoutUrl = import.meta.env.VITE_STRIPE_PAYMENT_LINK || "https://buy.stripe.com/14kaGL2LZ2vC2RyfYY";
       console.log('跳转到Stripe支付页面:', stripeCheckoutUrl);
       window.open(stripeCheckoutUrl, '_self');
     } catch (error: any) {
