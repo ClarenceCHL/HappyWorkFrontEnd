@@ -20,52 +20,68 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
   const handleStripeCheckout = async () => {
     try {
       console.log('开始创建Stripe支付会话...');
-      // 调用后端API创建支付会话
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // 根据需要传递产品信息，例如：
-          productName: '人设战略破局职场PUA方案',
-          amount: 4900, // 单位：分，49元
-        }),
+      // 获取API基础URL
+      const API_URL = import.meta.env.VITE_API_URL || 'https://happywork.today';
+      console.log('使用API URL:', API_URL);
+      
+      // 准备请求数据
+      const requestData = {
+        productName: '人设战略破局职场PUA方案',
+        amount: 4900, // 单位：分，49元
+      };
+      console.log('发送支付请求数据:', JSON.stringify(requestData));
+      
+      // 尝试直接使用XMLHttpRequest
+      return new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_URL}/api/create-checkout-session`, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.withCredentials = true;
+        
+        xhr.onload = function() {
+          console.log('XHR状态:', xhr.status);
+          console.log('XHR响应:', xhr.responseText);
+          
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              // 尝试解析JSON
+              if (!xhr.responseText || xhr.responseText.trim() === '') {
+                reject(new Error('服务器返回了空响应'));
+                return;
+              }
+              
+              const session = JSON.parse(xhr.responseText);
+              console.log('解析响应数据:', session);
+              
+              if (session.url) {
+                console.log('准备跳转到支付页面:', session.url);
+                window.open(session.url, '_self');
+                resolve();
+              } else {
+                reject(new Error(session.message || '支付会话创建失败: 未找到URL'));
+              }
+            } catch (error: any) {
+              console.error('JSON解析失败:', error);
+              reject(new Error(`无法解析服务器响应: ${error.message}, 原始响应: ${xhr.responseText}`));
+            }
+          } else {
+            reject(new Error(`服务器响应错误: ${xhr.status} ${xhr.statusText || ''}`));
+          }
+        };
+        
+        xhr.onerror = function() {
+          console.error('请求失败:', xhr.statusText);
+          reject(new Error('网络请求失败，请检查网络连接'));
+        };
+        
+        xhr.ontimeout = function() {
+          console.error('请求超时');
+          reject(new Error('请求超时，服务器响应时间过长'));
+        };
+        
+        // 发送请求
+        xhr.send(JSON.stringify(requestData));
       });
-      
-      console.log('收到服务器响应:', response.status, response.statusText);
-      
-      // 检查HTTP响应状态
-      if (!response.ok) {
-        throw new Error(`服务器响应错误: ${response.status} ${response.statusText}`);
-      }
-      
-      // 检查响应内容是否为空
-      const responseText = await response.text();
-      if (!responseText || responseText.trim() === '') {
-        throw new Error('服务器返回了空响应');
-      }
-      
-      // 尝试解析JSON
-      let session;
-      try {
-        session = JSON.parse(responseText);
-      } catch (error: any) {
-        console.error('JSON解析失败:', error, '原始响应:', responseText);
-        throw new Error(`无法解析服务器响应: ${error.message}`);
-      }
-      
-      console.log('解析响应数据:', session);
-      
-      // 如果创建会话成功，重定向到Stripe Checkout页面
-      if (session.url) {
-        console.log('准备跳转到支付页面:', session.url);
-        // 尝试使用window.open而不是location.href
-        window.open(session.url, '_self');
-      } else {
-        console.error('支付会话响应中没有URL字段:', session);
-        throw new Error(session.message || '支付会话创建失败');
-      }
     } catch (error: any) {
       console.error('支付过程中出错:', error);
       alert(`支付过程中出错: ${error.message || '未知错误'}`);
