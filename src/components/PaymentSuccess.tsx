@@ -19,7 +19,7 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ onContinue }) => {
   const verifyPayment = async () => {
     try {
       setIsVerifying(true);
-      // 从URL获取用户ID，如果有的话
+      // 从URL获取会话ID，如果有的话
       const urlParams = new URLSearchParams(window.location.search);
       const sessionId = urlParams.get('session_id');
       
@@ -36,7 +36,8 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ onContinue }) => {
       }
       
       // 调用API验证支付状态
-      const response = await fetch('/api/verify-payment', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_URL}/api/verify-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,6 +51,11 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ onContinue }) => {
       if (data.status === 'success' && data.is_paid) {
         console.log('支付验证成功，用户已付费');
         setVerificationComplete(true);
+        
+        // 通知全局状态已支付(自动调用onContinue)
+        setTimeout(() => {
+          onContinue();
+        }, 1500);
       } else if (verificationAttempts < 3) {
         // 如果验证不成功且尝试次数少于3次，5秒后重试
         console.log(`支付验证未成功，${5}秒后重试...`);
@@ -77,7 +83,7 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ onContinue }) => {
         <h1 className="text-2xl font-bold text-white mb-4">支付成功！</h1>
         
         <p className="text-gray-300 mb-8">
-          您的支付已成功处理。现在可以继续使用我们的服务了。
+          您的支付已成功处理。{verificationComplete ? '现在可以继续使用我们的服务了。' : '正在验证支付状态...'}
         </p>
         
         <button

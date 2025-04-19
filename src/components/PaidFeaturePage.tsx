@@ -5,7 +5,7 @@ import PaymentModal from './PaymentModal';
 // 临时的 API URL 和 Token 获取方式，后续应替换为实际实现
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; 
 // 修改 localStorage 的键名以匹配 App.tsx
-const getToken = () => localStorage.getItem('userToken');
+const getToken = () => localStorage.getItem('token');
 
 // 定义 App.tsx 中的 PageType 类型，确保一致
 type PageType = 'home' | 'chat' | 'auth' | 'paidFeature';
@@ -24,6 +24,104 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [paymentCheckInterval, setPaymentCheckInterval] = useState<number | null>(null);
+
+  // 检查支付状态的逻辑
+  useEffect(() => {
+    // 如果用户未付费，且支付弹窗刚关闭，启动定期检查
+    if (!isUserPaid && !isPaymentModalOpen) {
+      startPaymentCheck();
+    }
+
+    // 当用户已付费时，停止检查
+    if (isUserPaid && paymentCheckInterval) {
+      stopPaymentCheck();
+    }
+
+    // 组件销毁时清理
+    return () => {
+      if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+      }
+    };
+  }, [isUserPaid, isPaymentModalOpen]);
+
+  // 启动支付状态检查
+  const startPaymentCheck = () => {
+    if (paymentCheckInterval) return; // 如果已经在检查，不要重复启动
+
+    // 每10秒检查一次支付状态，最多检查5分钟
+    let checkCount = 0;
+    const maxChecks = 30; // 5分钟 = 30次检查
+
+    console.log("开始定期检查支付状态...");
+    const intervalId = window.setInterval(async () => {
+      if (checkCount >= maxChecks) {
+        console.log("达到最大检查次数，停止检查");
+        stopPaymentCheck();
+        return;
+      }
+
+      await checkPaymentStatus();
+      checkCount++;
+    }, 10000);
+
+    setPaymentCheckInterval(intervalId);
+    
+    // 立即执行一次检查
+    checkPaymentStatus();
+  };
+
+  // 停止支付状态检查
+  const stopPaymentCheck = () => {
+    if (paymentCheckInterval) {
+      clearInterval(paymentCheckInterval);
+      setPaymentCheckInterval(null);
+      console.log("停止支付状态检查");
+    }
+  };
+
+  // 检查支付状态
+  const checkPaymentStatus = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    if (isCheckingPayment) return; // 防止重复请求
+    
+    try {
+      setIsCheckingPayment(true);
+      console.log("检查支付状态...");
+      
+      const response = await fetch(`${API_BASE_URL}/api/check-payment-status`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.is_paid) {
+        console.log("检测到支付成功，更新状态");
+        onPaymentSuccess(); // 更新App.tsx中的状态
+        
+        // 显示成功消息
+        setSuccessMessage('您的支付已确认，感谢您的支持！');
+        setShowSuccessToast(true);
+        setTimeout(() => {
+          setShowSuccessToast(false);
+        }, 3000);
+        
+        // 停止检查
+        stopPaymentCheck();
+      }
+    } catch (error) {
+      console.error("检查支付状态出错:", error);
+    } finally {
+      setIsCheckingPayment(false);
+    }
+  };
 
   const handleOpenPaymentModal = () => {
     setIsPaymentModalOpen(true);
@@ -31,6 +129,8 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
 
   const handleClosePaymentModal = () => {
     setIsPaymentModalOpen(false);
+    // 关闭支付弹窗后开始定期检查支付状态
+    startPaymentCheck();
   };
 
   const handlePayment = () => {

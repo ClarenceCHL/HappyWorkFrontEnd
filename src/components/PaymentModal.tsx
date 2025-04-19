@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, ShieldAlert, FileText, Bot, Gift } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ShieldAlert, FileText, Bot, Gift, Loader2 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 
 // Stripe公钥：从环境变量获取
@@ -14,20 +14,43 @@ interface PaymentModalProps {
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onFreeAccess }) => {
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [isFreeAccessLoading, setIsFreeAccessLoading] = useState(false);
+
   if (!isOpen) return null;
 
   // 处理Stripe支付
   const handleStripeCheckout = async () => {
     try {
+      setIsPaymentLoading(true);
       console.log('准备直接跳转到Stripe支付页面...');
       // 从环境变量获取支付链接
       const stripeCheckoutUrl = import.meta.env.VITE_STRIPE_PAYMENT_LINK || "https://buy.stripe.com/14kaGL2LZ2vC2RyfYY";
       console.log('跳转到Stripe支付页面:', stripeCheckoutUrl);
       // 修改为在新窗口打开，确保在移动设备上也有相同的行为
       window.open(stripeCheckoutUrl, '_blank', 'noopener,noreferrer');
+      
+      // 设置3秒后自动关闭模态框，改善用户体验
+      setTimeout(() => {
+        setIsPaymentLoading(false);
+        onClose();
+      }, 3000);
     } catch (error: any) {
       console.error('支付过程中出错:', error);
       alert(`支付过程中出错: ${error.message || '未知错误'}`);
+      setIsPaymentLoading(false);
+    }
+  };
+
+  // 处理免费访问，添加加载状态
+  const handleFreeAccess = async () => {
+    setIsFreeAccessLoading(true);
+    try {
+      await onFreeAccess();
+    } finally {
+      // 无论是否成功，重置加载状态
+      // onFreeAccess内部会关闭模态框，所以这里不需要额外处理
+      setIsFreeAccessLoading(false);
     }
   };
 
@@ -39,6 +62,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-200 transition-colors z-10"
           aria-label="关闭支付窗口"
+          disabled={isPaymentLoading || isFreeAccessLoading}
         >
           <X className="w-6 h-6" />
         </button>
@@ -78,19 +102,37 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
             {/* Payment Button */}
             <button
               onClick={handleStripeCheckout}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-md hover:scale-105"
+              disabled={isPaymentLoading || isFreeAccessLoading}
+              className={`w-full sm:w-auto ${isPaymentLoading ? 'bg-blue-800' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 ${!isPaymentLoading && 'hover:scale-105'} shadow-md`}
               title="通过信用卡或微信支付"
             >
-              <span>信用卡/微信支付</span>
+              {isPaymentLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  正在跳转支付...
+                </>
+              ) : (
+                <span>信用卡/微信支付</span>
+              )}
             </button>
             
             {/* Limited Time Free Button */}
             <button
-              onClick={onFreeAccess}
-              className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+              onClick={handleFreeAccess}
+              disabled={isPaymentLoading || isFreeAccessLoading}
+              className={`w-full sm:w-auto ${isFreeAccessLoading ? 'bg-green-800' : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600'} text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 shadow-md ${!isFreeAccessLoading && 'hover:shadow-lg hover:scale-105'}`}
             >
-              <Gift className="w-5 h-5" />
-              <span>限时免费</span>
+              {isFreeAccessLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  处理中...
+                </>
+              ) : (
+                <>
+                  <Gift className="w-5 h-5" />
+                  <span>限时免费</span>
+                </>
+              )}
             </button>
           </div>
 
