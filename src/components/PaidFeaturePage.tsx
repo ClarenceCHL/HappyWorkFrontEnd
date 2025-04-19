@@ -25,83 +25,22 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
-  const [paymentCheckInterval, setPaymentCheckInterval] = useState<number | null>(null);
-
-  // 检查支付状态的逻辑
-  useEffect(() => {
-    // 如果用户未付费，且支付弹窗刚关闭，启动定期检查
-    if (!isUserPaid && !isPaymentModalOpen) {
-      startPaymentCheck();
-    }
-
-    // 当用户已付费时，停止检查
-    if (isUserPaid && paymentCheckInterval) {
-      stopPaymentCheck();
-    }
-
-    // 组件销毁时清理
-    return () => {
-      if (paymentCheckInterval) {
-        clearInterval(paymentCheckInterval);
-      }
-    };
-  }, [isUserPaid, isPaymentModalOpen]);
-
-  // 新增：组件挂载时检查一次支付状态，确保支付后的状态同步
-  useEffect(() => {
-    // 如果用户未标记为已付费，手动检查一次支付状态
-    if (!isUserPaid) {
-      console.log("组件挂载时检查一次支付状态");
-      checkPaymentStatus();
-    }
-  }, []); // 空依赖数组确保只在组件挂载时执行一次
-
-  // 启动支付状态检查
-  const startPaymentCheck = () => {
-    if (paymentCheckInterval) return; // 如果已经在检查，不要重复启动
-
-    // 每10秒检查一次支付状态，最多检查5分钟
-    let checkCount = 0;
-    const maxChecks = 30; // 5分钟 = 30次检查
-
-    console.log("开始定期检查支付状态...");
-    const intervalId = window.setInterval(async () => {
-      if (checkCount >= maxChecks) {
-        console.log("达到最大检查次数，停止检查");
-        stopPaymentCheck();
-        return;
-      }
-
-      await checkPaymentStatus();
-      checkCount++;
-    }, 10000);
-
-    setPaymentCheckInterval(intervalId);
-    
-    // 立即执行一次检查
-    checkPaymentStatus();
-  };
-
-  // 停止支付状态检查
-  const stopPaymentCheck = () => {
-    if (paymentCheckInterval) {
-      clearInterval(paymentCheckInterval);
-      setPaymentCheckInterval(null);
-      console.log("停止支付状态检查");
-    }
-  };
 
   // 检查支付状态
   const checkPaymentStatus = async () => {
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+      // 如果没有 token，可能需要提示用户重新登录
+      onLoginRequired('paidFeature');
+      return false; // 指示检查失败
+    }
 
-    if (isCheckingPayment) return; // 防止重复请求
+    if (isCheckingPayment) return false; // 防止重复请求
+    
+    setIsCheckingPayment(true);
+    console.log("手动检查支付状态...");
     
     try {
-      setIsCheckingPayment(true);
-      console.log("检查支付状态...");
-      
       const response = await fetch(`${API_BASE_URL}/api/check-payment-status`, {
         method: 'GET',
         headers: {
@@ -116,17 +55,23 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         onPaymentSuccess(); // 更新App.tsx中的状态
         
         // 显示成功消息
-        setSuccessMessage('您的支付已确认，感谢您的支持！');
+        setSuccessMessage('支付已确认，感谢您的支持！');
         setShowSuccessToast(true);
         setTimeout(() => {
           setShowSuccessToast(false);
         }, 3000);
-        
-        // 停止检查
-        stopPaymentCheck();
+
+        return true; // 指示支付成功
+      } else {
+        // 如果后端返回未支付，则提示用户
+        console.log("支付状态未确认或检查失败");
+        alert("尚未检测到您的支付信息，请稍后再试或联系客服。");
+        return false; // 指示支付未成功
       }
     } catch (error) {
       console.error("检查支付状态出错:", error);
+      alert("检查支付状态时发生错误，请稍后再试。");
+      return false; // 指示检查失败
     } finally {
       setIsCheckingPayment(false);
     }
@@ -138,76 +83,78 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
 
   const handleClosePaymentModal = () => {
     setIsPaymentModalOpen(false);
-    // 关闭支付弹窗后开始定期检查支付状态
-    startPaymentCheck();
+    // 关闭时不再需要自动启动检查
+    // startPaymentCheck();
   };
 
+  // 新增：处理来自 PaymentModal 的手动检查请求
+  const handleManualPaymentCheck = async () => {
+    const paymentConfirmed = await checkPaymentStatus();
+    if (paymentConfirmed) {
+      // 如果支付确认成功，关闭模态框
+      handleClosePaymentModal();
+    }
+    // 如果支付未确认，模态框保持打开，checkPaymentStatus 内部已提示用户
+  };
+
+  // PayPal 支付处理 (不再是主要流程，但保留以防万一)
   const handlePayment = () => {
-    // 新增：检查用户是否登录
     const token = getToken();
     if (!token) {
-      // 调用登录回调，并指定返回目标为 'paidFeature'
       onLoginRequired('paidFeature'); 
-      handleClosePaymentModal(); // 关闭支付弹窗
-      return; // 阻止后续支付逻辑
+      handleClosePaymentModal();
+      return;
     }
-
-    // 原有支付逻辑 (当前是打开 PayPal 链接)
     const paypalMeLink = "https://www.paypal.com/paypalme/HappyWorkFkPUA";
-    window.open(paypalMeLink, '_blank'); // 在新标签页打开支付链接
-    
-    // 关闭支付模态框，并开始检查支付状态
+    window.open(paypalMeLink, '_blank');
     handleClosePaymentModal();
-    alert("支付页面已在新标签页打开。完成支付后，请返回此页面查看状态更新。");
+    alert("支付页面已在新标签页打开。完成支付后，请手动刷新页面或稍后查看状态。"); // 更新提示
   };
 
+  // 免费访问处理 (onFreeAccess 现在需要是 async)
   const handleFreeAccess = async () => {
     console.log("处理限时免费访问...");
     const token = getToken();
 
     if (!token) {
-      // 调用登录回调，并指定返回目标为 'paidFeature'
       onLoginRequired('paidFeature'); 
-      return;
+      return; // 提前返回
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/activate-free-access`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({}) // POST 请求通常需要 body，即使是空的
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.status === 'success') {
+    // 注意：try...catch 应该在调用处处理，这里直接返回 Promise
+    // 让 PaymentModal 中的调用者处理加载状态和错误
+    return fetch(`${API_BASE_URL}/api/activate-free-access`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({}) 
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.status === 'success') {
         console.log("免费访问激活成功:", result.message);
-        // 关闭模态框
-        handleClosePaymentModal();
-        
-        // !!! 调用回调函数通知 App 更新状态 !!!
-        onPaymentSuccess(); 
+        handleClosePaymentModal(); // 关闭模态框
+        onPaymentSuccess(); // 更新 App 状态
 
         // 显示成功提示
         setSuccessMessage('限时免费访问成功！即将进入下一步...');
         setShowSuccessToast(true);
-        setTimeout(() => {
-          setShowSuccessToast(false);
-        }, 2700);
-        setTimeout(() => {
-          setSuccessMessage('');
-        }, 3000);
+        setTimeout(() => setShowSuccessToast(false), 2700);
+        setTimeout(() => setSuccessMessage(''), 3000);
+        // 不需要返回特定值，成功即可
       } else {
         console.error("免费访问激活失败:", result.message);
-        alert(`激活失败: ${result.message || '请稍后再试'}`);
+        // 抛出错误，让调用者处理
+        throw new Error(result.message || '激活失败，请稍后再试');
       }
-    } catch (error) {
+    })
+    .catch(error => {
       console.error("调用免费访问 API 时出错:", error);
-      alert("请求失败，请检查网络连接或稍后再试。");
-    }
+      // 重新抛出错误，让调用者处理
+      throw new Error("请求失败，请检查网络连接或稍后再试。");
+    });
   };
 
   const handleDownloadReport = async () => {
@@ -289,7 +236,7 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         <span className="text-sm font-medium">{successMessage}</span>
       </div>
 
-      {/* 新增：支付检查中的加载指示器 */}
+      {/* 加载指示器现在由 checkPaymentStatus 内部的 isCheckingPayment 控制 */}
       {!isUserPaid && isCheckingPayment && (
         <div className="fixed top-16 left-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center z-50">
           <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -477,13 +424,14 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         </div>
       </div>
 
-      {/* Payment Modal (仅在未付费时需要打开) */}
+      {/* Payment Modal (传递新的 onManualCheck prop) */} 
       {!isUserPaid && (
         <PaymentModal
           isOpen={isPaymentModalOpen}
           onClose={handleClosePaymentModal}
-          onPay={onPaymentSuccess}
-          onFreeAccess={handleFreeAccess}
+          onPay={handlePayment} // 保留
+          onFreeAccess={handleFreeAccess} // 确保 handleFreeAccess 返回 Promise
+          onManualCheck={handleManualPaymentCheck} // 传递新的处理函数
         />
       )}
 
