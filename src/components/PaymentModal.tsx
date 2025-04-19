@@ -23,7 +23,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
       // 从环境变量获取支付链接
       const stripeCheckoutUrl = import.meta.env.VITE_STRIPE_PAYMENT_LINK || "https://buy.stripe.com/14kaGL2LZ2vC2RyfYY";
       console.log('跳转到Stripe支付页面:', stripeCheckoutUrl);
-      window.open(stripeCheckoutUrl, '_self');
+      // 修改为在新窗口打开，确保在移动设备上也有相同的行为
+      window.open(stripeCheckoutUrl, '_blank', 'noopener,noreferrer');
     } catch (error: any) {
       console.error('支付过程中出错:', error);
       alert(`支付过程中出错: ${error.message || '未知错误'}`);
