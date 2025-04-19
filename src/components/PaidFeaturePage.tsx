@@ -5,7 +5,7 @@ import PaymentModal from './PaymentModal';
 // 临时的 API URL 和 Token 获取方式，后续应替换为实际实现
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; 
 // 修改 localStorage 的键名以匹配 App.tsx
-const getToken = () => localStorage.getItem('userToken');
+const getToken = () => localStorage.getItem('token');
 
 // 定义 App.tsx 中的 PageType 类型，确保一致
 type PageType = 'home' | 'chat' | 'auth' | 'paidFeature';
@@ -152,9 +152,13 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
       return; // 阻止后续支付逻辑
     }
 
-    // 不需要在这里执行任何操作，因为具体的支付逻辑会在PaymentModal组件中处理
-    // PaymentModal组件中会打开Stripe链接，并在用户确认支付后调用onPaymentSuccess
-    console.log("打开支付链接，实际支付动作由PaymentModal处理");
+    // 原有支付逻辑 (当前是打开 PayPal 链接)
+    const paypalMeLink = "https://www.paypal.com/paypalme/HappyWorkFkPUA";
+    window.open(paypalMeLink, '_blank'); // 在新标签页打开支付链接
+    
+    // 关闭支付模态框，并开始检查支付状态
+    handleClosePaymentModal();
+    alert("支付页面已在新标签页打开。完成支付后，请返回此页面查看状态更新。");
   };
 
   const handleFreeAccess = async () => {
@@ -478,7 +482,7 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         <PaymentModal
           isOpen={isPaymentModalOpen}
           onClose={handleClosePaymentModal}
-          onPay={handlePayment}
+          onPay={onPaymentSuccess}
           onFreeAccess={handleFreeAccess}
         />
       )}

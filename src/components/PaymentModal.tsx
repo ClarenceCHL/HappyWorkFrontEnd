@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { X, ShieldAlert, FileText, Bot, Gift, Loader2, CheckCircle } from 'lucide-react';
+import { X, ShieldAlert, FileText, Bot, Gift, Loader2, CheckCircle, RefreshCw } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 
 // Stripe公钥：从环境变量获取
 const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_YOUR_PUBLISHABLE_KEY';
 const stripePromise = loadStripe(STRIPE_KEY);
 
-// 获取API基础URL
+// 添加API基础URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-// 获取token
-const getToken = () => localStorage.getItem('userToken');
+// 获取token的函数
+const getToken = () => localStorage.getItem('token');
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -21,8 +21,9 @@ interface PaymentModalProps {
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onFreeAccess }) => {
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const [isFreeAccessLoading, setIsFreeAccessLoading] = useState(false);
-  const [showPaymentCompleteButton, setShowPaymentCompleteButton] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [showPaymentCompleteButton, setShowPaymentCompleteButton] = useState(false);
+  const [paymentCheckResult, setPaymentCheckResult] = useState<{success?: boolean; message?: string} | null>(null);
 
   if (!isOpen) return null;
 
@@ -68,7 +69,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
     }
 
     setIsCheckingPayment(true);
-    
+    setPaymentCheckResult(null);
+
     try {
       console.log("手动检查支付状态...");
       
@@ -82,17 +84,29 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
       const data = await response.json();
       
       if (data.status === 'success' && data.is_paid) {
-        console.log("支付成功，更新状态");
-        // 调用传入的onPay回调，该回调会触发App组件更新用户支付状态
+        console.log("检测到支付成功，更新状态");
+        setPaymentCheckResult({success: true, message: '支付成功！'});
+        
+        // 调用onPay回调，让App组件更新状态
         onPay();
-        // 关闭模态框
-        onClose();
+        
+        // 2秒后关闭模态框
+        setTimeout(() => {
+          onClose();
+        }, 2000);
       } else {
-        alert('您的支付尚未确认，请稍后再试或刷新页面');
+        console.log("支付状态检查结果:", data);
+        setPaymentCheckResult({
+          success: false, 
+          message: '未检测到支付完成，请确认您已完成支付流程，或稍后再试'
+        });
       }
     } catch (error) {
       console.error("检查支付状态出错:", error);
-      alert('检查支付状态失败，请刷新页面后重试');
+      setPaymentCheckResult({
+        success: false, 
+        message: '检查支付状态时出错，请稍后重试'
+      });
     } finally {
       setIsCheckingPayment(false);
     }
@@ -114,6 +128,23 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
         {/* Content */}
         <div className="p-6 md:p-8">
           <h2 className="text-2xl font-bold text-center mb-6 text-amber-300">支付流程说明</h2>
+
+          {/* 显示支付状态检查结果 */}
+          {paymentCheckResult && (
+            <div className={`mb-6 p-4 rounded-lg ${
+              paymentCheckResult.success 
+                ? 'bg-green-500/20 border border-green-500/40 text-green-300' 
+                : 'bg-red-500/20 border border-red-500/40 text-red-300'
+            }`}>
+              <p className="flex items-center justify-center gap-2">
+                {paymentCheckResult.success 
+                  ? <CheckCircle className="w-5 h-5" /> 
+                  : <X className="w-5 h-5" />
+                }
+                {paymentCheckResult.message}
+              </p>
+            </div>
+          )}
 
           {!showPaymentCompleteButton ? (
             <>
@@ -181,43 +212,48 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
                   )}
                 </button>
               </div>
-
-              <p className="text-xs text-gray-500 text-center mt-6">
-                选择一种方式继续。
-              </p>
             </>
           ) : (
-            <>
-              {/* 支付完成后的提示和按钮 */}
-              <div className="text-center mb-8">
-                <div className="bg-gray-800/70 p-6 rounded-xl border border-gray-700 mb-6">
-                  <p className="text-amber-300 mb-4 font-semibold">支付页面已在新窗口打开</p>
-                  <p className="text-gray-300 mb-1">完成支付后，请点击下方的按钮确认：</p>
-                  <p className="text-gray-400 text-sm">系统将检查您的支付状态并更新您的账户</p>
-                </div>
-                <button
-                  onClick={handlePaymentComplete}
-                  disabled={isCheckingPayment}
-                  className={`w-full px-6 py-4 ${isCheckingPayment ? 'bg-green-800' : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600'} text-white font-bold rounded-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-md mx-auto ${!isCheckingPayment && 'hover:shadow-lg hover:scale-105'}`}
-                >
-                  {isCheckingPayment ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      正在验证支付...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-6 h-6" />
-                      我已完成支付
-                    </>
-                  )}
-                </button>
-                <p className="text-xs text-gray-500 mt-4">
-                  如果您还未完成支付，可以关闭此窗口继续支付
-                </p>
+            <div className="space-y-6 py-4">
+              <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-5 text-center">
+                <p className="text-blue-300 mb-2 font-medium">已打开支付页面</p>
+                <p className="text-sm text-gray-300">请完成支付后，点击下方按钮确认支付状态</p>
               </div>
-            </>
+              
+              <button
+                onClick={handlePaymentComplete}
+                disabled={isCheckingPayment}
+                className={`w-full ${
+                  isCheckingPayment 
+                    ? 'bg-amber-700' 
+                    : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600'
+                } text-black font-bold py-4 px-6 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 shadow-lg ${!isCheckingPayment && 'hover:shadow-xl hover:scale-105'}`}
+              >
+                {isCheckingPayment ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    正在检查支付状态...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5" />
+                    <span>我已完成支付，刷新状态</span>
+                  </>
+                )}
+              </button>
+              
+              <p className="text-xs text-center text-gray-400">
+                若已完成支付但状态未更新，可能需要等待几秒钟后再次点击刷新按钮。
+              </p>
+            </div>
           )}
+
+          <p className="text-xs text-gray-500 text-center mt-6">
+            {!showPaymentCompleteButton 
+              ? "选择一种方式继续。" 
+              : "支付完成后页面将自动更新。"
+            }
+          </p>
         </div>
       </div>
     </div>
