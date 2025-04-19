@@ -82,6 +82,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
       });
       
       const data = await response.json();
+      console.log("支付状态检查响应:", data); // 输出完整响应，方便调试
       
       if (data.status === 'success' && data.is_paid) {
         console.log("检测到支付成功，更新状态");
@@ -96,9 +97,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
         }, 2000);
       } else {
         console.log("支付状态检查结果:", data);
+        // 显示更详细的错误信息
         setPaymentCheckResult({
           success: false, 
-          message: '未检测到支付完成，请确认您已完成支付流程，或稍后再试'
+          message: '您的支付尚未确认，请稍后再试或刷新页面'
         });
       }
     } catch (error) {
@@ -110,6 +112,65 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
     } finally {
       setIsCheckingPayment(false);
     }
+  };
+
+  // 新增：强制更新支付状态
+  const handleForceUpdatePayment = async () => {
+    const token = getToken();
+    if (!token) {
+      alert('请先登录');
+      return;
+    }
+
+    setIsCheckingPayment(true);
+    setPaymentCheckResult(null);
+
+    try {
+      console.log("强制更新支付状态...");
+      
+      const response = await fetch(`${API_BASE_URL}/api/force-update-payment-status`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      console.log("强制更新支付状态响应:", data);
+      
+      if (data.status === 'success' && data.is_paid) {
+        console.log("支付状态已强制更新，更新UI状态");
+        setPaymentCheckResult({success: true, message: '支付状态已强制更新！'});
+        
+        // 调用onPay回调，让App组件更新状态
+        onPay();
+        
+        // 2秒后关闭模态框
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      } else {
+        console.log("强制更新支付状态失败:", data);
+        setPaymentCheckResult({
+          success: false, 
+          message: data.message || '强制更新支付状态失败，请联系客服'
+        });
+      }
+    } catch (error) {
+      console.error("强制更新支付状态出错:", error);
+      setPaymentCheckResult({
+        success: false, 
+        message: '强制更新支付状态时出错，请稍后重试'
+      });
+    } finally {
+      setIsCheckingPayment(false);
+    }
+  };
+
+  // 新增：强制刷新页面
+  const handleForceRefresh = () => {
+    window.location.reload();
   };
 
   return (
@@ -242,8 +303,28 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
                 )}
               </button>
               
-              <p className="text-xs text-center text-gray-400">
-                若已完成支付但状态未更新，可能需要等待几秒钟后再次点击刷新按钮。
+              {/* 强制刷新按钮 */}
+              <button 
+                onClick={handleForceRefresh}
+                className="w-full mt-3 bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 px-6 rounded-lg flex items-center justify-center gap-2 transition-all duration-300"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>强制刷新页面</span>
+              </button>
+              
+              {/* 强制更新支付状态按钮 */}
+              <button 
+                onClick={handleForceUpdatePayment}
+                disabled={isCheckingPayment}
+                className="w-full mt-3 bg-red-900/70 hover:bg-red-800 text-white py-2 px-6 rounded-lg flex items-center justify-center gap-2 transition-all duration-300"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>强制更新支付状态 (如已付费但仍显示未付费)</span>
+              </button>
+              
+              <p className="text-xs text-center text-gray-400 mt-2">
+                若已完成支付但状态未更新，可能需要等待几秒钟后再次点击刷新按钮。<br/>
+                如果多次检查仍未成功，请点击上方"强制刷新页面"按钮。
               </p>
             </div>
           )}
