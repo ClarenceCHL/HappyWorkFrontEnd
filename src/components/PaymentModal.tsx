@@ -9,7 +9,7 @@ const stripePromise = loadStripe(STRIPE_KEY);
 // 获取API基础URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 // 获取token
-const getToken = () => localStorage.getItem('token');
+const getToken = () => localStorage.getItem('userToken');
 
 interface PaymentModalProps {
   isOpen: boolean;

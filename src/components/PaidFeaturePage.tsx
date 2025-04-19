@@ -5,7 +5,7 @@ import PaymentModal from './PaymentModal';
 // 临时的 API URL 和 Token 获取方式，后续应替换为实际实现
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; 
 // 修改 localStorage 的键名以匹配 App.tsx
-const getToken = () => localStorage.getItem('token');
+const getToken = () => localStorage.getItem('userToken');
 
 // 定义 App.tsx 中的 PageType 类型，确保一致
 type PageType = 'home' | 'chat' | 'auth' | 'paidFeature';
