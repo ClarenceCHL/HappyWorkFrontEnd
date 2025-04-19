@@ -34,7 +34,27 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
       });
       
       console.log('收到服务器响应:', response.status, response.statusText);
-      const session = await response.json();
+      
+      // 检查HTTP响应状态
+      if (!response.ok) {
+        throw new Error(`服务器响应错误: ${response.status} ${response.statusText}`);
+      }
+      
+      // 检查响应内容是否为空
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('服务器返回了空响应');
+      }
+      
+      // 尝试解析JSON
+      let session;
+      try {
+        session = JSON.parse(responseText);
+      } catch (error: any) {
+        console.error('JSON解析失败:', error, '原始响应:', responseText);
+        throw new Error(`无法解析服务器响应: ${error.message}`);
+      }
+      
       console.log('解析响应数据:', session);
       
       // 如果创建会话成功，重定向到Stripe Checkout页面
@@ -44,11 +64,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
         window.open(session.url, '_self');
       } else {
         console.error('支付会话响应中没有URL字段:', session);
-        throw new Error('支付会话创建失败');
+        throw new Error(session.message || '支付会话创建失败');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('支付过程中出错:', error);
-      alert('支付过程中出错，请稍后再试');
+      alert(`支付过程中出错: ${error.message || '未知错误'}`);
     }
   };
 

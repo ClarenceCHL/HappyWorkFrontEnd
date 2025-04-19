@@ -321,7 +321,7 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
                 <div className="bg-[#1a1a1a] px-6 py-4 rounded-md relative">
                   <p className="text-lg font-medium text-amber-300 mb-1">一次付费，永久下载</p>
                   <p className="text-4xl md:text-5xl font-bold text-white relative">
-                    ¥20
+                    ¥49
                     <span 
                       className="absolute left-0 right-0 top-1/2 h-0.5 bg-red-500 transform -translate-y-1/2 scale-x-0 group-hover/cta:scale-x-100 transition-transform duration-300 origin-left"
                       aria-hidden="true"
