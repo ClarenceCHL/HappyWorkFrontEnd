@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ShieldAlert, FileText, Bot, Gift, Loader2 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 
@@ -16,8 +16,77 @@ interface PaymentModalProps {
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onFreeAccess }) => {
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const [isFreeAccessLoading, setIsFreeAccessLoading] = useState(false);
+  const [stripeWindow, setStripeWindow] = useState<Window | null>(null);
 
   if (!isOpen) return null;
+
+  // 检查支付状态
+  useEffect(() => {
+    if (isPaymentLoading && stripeWindow) {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+      
+      if (!token) return;
+      
+      // 定时检查支付状态
+      const checkPaymentStatus = async () => {
+        try {
+          const response = await fetch(`${API_URL}/api/check-payment-status`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          const data = await response.json();
+          
+          // 如果支付成功，关闭Stripe窗口和支付模态框
+          if (data.status === 'success' && data.is_paid) {
+            console.log('支付已成功确认');
+            
+            // 尝试关闭Stripe窗口
+            if (stripeWindow && !stripeWindow.closed) {
+              stripeWindow.close();
+            }
+            
+            // 重置加载状态并关闭模态框
+            setIsPaymentLoading(false);
+            onPay(); // 通知父组件支付成功
+            onClose();
+            return;
+          }
+          
+          // 如果Stripe窗口已关闭但支付未成功，则重置状态
+          if (stripeWindow && stripeWindow.closed) {
+            console.log('Stripe窗口已关闭，但支付未确认');
+            setIsPaymentLoading(false);
+            return;
+          }
+          
+          // 继续检查
+          setTimeout(checkPaymentStatus, 2000);
+        } catch (error) {
+          console.error('检查支付状态时出错:', error);
+          // 出错时也继续检查，但延长间隔
+          setTimeout(checkPaymentStatus, 3000);
+        }
+      };
+      
+      // 启动检查
+      checkPaymentStatus();
+      
+      // 如果Stripe窗口被用户关闭，我们需要重置状态
+      const intervalId = setInterval(() => {
+        if (stripeWindow && stripeWindow.closed) {
+          console.log('检测到Stripe窗口已关闭');
+          setIsPaymentLoading(false);
+          clearInterval(intervalId);
+        }
+      }, 1000);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [isPaymentLoading, stripeWindow, onPay, onClose]);
 
   // 处理Stripe支付
   const handleStripeCheckout = async () => {
@@ -27,14 +96,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
       // 从环境变量获取支付链接
       const stripeCheckoutUrl = import.meta.env.VITE_STRIPE_PAYMENT_LINK || "https://buy.stripe.com/14kaGL2LZ2vC2RyfYY";
       console.log('跳转到Stripe支付页面:', stripeCheckoutUrl);
-      // 修改为在新窗口打开，确保在移动设备上也有相同的行为
-      window.open(stripeCheckoutUrl, '_blank', 'noopener,noreferrer');
       
-      // 设置3秒后自动关闭模态框，改善用户体验
-      setTimeout(() => {
-        setIsPaymentLoading(false);
-        onClose();
-      }, 3000);
+      // 在新窗口打开Stripe支付页面
+      const paymentWindow = window.open(stripeCheckoutUrl, '_blank', 'noopener,noreferrer');
+      
+      // 保存窗口引用以便后续检查
+      setStripeWindow(paymentWindow);
+      
+      // 不再自动关闭模态框，而是等待支付状态确认
     } catch (error: any) {
       console.error('支付过程中出错:', error);
       alert(`支付过程中出错: ${error.message || '未知错误'}`);
@@ -109,7 +178,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
               {isPaymentLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  正在跳转支付...
+                  处理支付中...
                 </>
               ) : (
                 <span>信用卡/微信支付</span>
@@ -137,7 +206,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
           </div>
 
           <p className="text-xs text-gray-500 text-center mt-6">
-            选择一种方式继续。
+            选择一种方式继续。{isPaymentLoading ? ' 支付处理中，请在新窗口完成支付...' : ''}
           </p>
         </div>
       </div>
