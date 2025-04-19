@@ -4,6 +4,8 @@ import { Auth } from './components/Auth';
 import { Chat, Message as ChatMessage } from './components/Chat';
 import PaidFeaturePage from './components/PaidFeaturePage';
 import QuestionnairePage from './components/QuestionnairePage';
+import PaymentSuccess from './components/PaymentSuccess';
+import PaymentCancel from './components/PaymentCancel';
 import heroImage from './assets/hero-image.png';
 import './styles.css';
 
@@ -56,7 +58,7 @@ interface Chat {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // 定义页面类型
-type PageType = 'home' | 'chat' | 'auth' | 'paidFeature' | 'questionnaire';
+type PageType = 'home' | 'chat' | 'auth' | 'paidFeature' | 'questionnaire' | 'paymentSuccess' | 'paymentCancel';
 
 // 定义认证模式类型 (AuthMode)
 type AuthMode = 'login' | 'register' | 'changePassword';
@@ -101,6 +103,8 @@ function App() {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const heroImageRef = useRef<HTMLImageElement>(null);
   const memberSectionRef = useRef<HTMLDivElement>(null);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState<boolean>(false);
+  const [showPaymentCancel, setShowPaymentCancel] = useState<boolean>(false);
 
   // 记忆化选项按钮组件，避免整个表单重新渲染
   const OptionButton = React.memo(({ 
@@ -847,6 +851,58 @@ function App() {
     handleOpenAuth('login', returnTo); 
   };
 
+  // 检查URL路径，处理支付回调
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    
+    if (currentPath === '/payment-success') {
+      setShowPaymentSuccess(true);
+      // 隐藏其他页面
+      setShowChat(false);
+      setShowAuth(false);
+      setShowPaidFeaturePage(false);
+      setShowQuestionnairePage(false);
+    } else if (currentPath === '/payment-cancel') {
+      setShowPaymentCancel(true);
+      // 隐藏其他页面
+      setShowChat(false);
+      setShowAuth(false);
+      setShowPaidFeaturePage(false);
+      setShowQuestionnairePage(false);
+    }
+  }, []);
+  
+  // 处理支付成功后的操作
+  const handlePaymentSuccessContinue = () => {
+    // 刷新用户信息，更新支付状态
+    fetchUserInfo();
+    
+    // 关闭支付成功页面，前往问卷页面
+    setShowPaymentSuccess(false);
+    setShowQuestionnairePage(true);
+    
+    // 更新浏览器历史记录，不改变URL
+    window.history.pushState(null, '', '/');
+  };
+  
+  // 处理支付取消后的操作
+  const handlePaymentRetry = () => {
+    // 关闭支付取消页面，重新打开付费功能页面
+    setShowPaymentCancel(false);
+    setShowPaidFeaturePage(true);
+    
+    // 更新浏览器历史记录，不改变URL
+    window.history.pushState(null, '', '/');
+  };
+  
+  const handlePaymentBack = () => {
+    // 关闭支付取消页面，返回首页
+    setShowPaymentCancel(false);
+    
+    // 更新浏览器历史记录，不改变URL
+    window.history.pushState(null, '', '/');
+  };
+
   return (
     <div 
       className="min-h-screen bg-[#111111] text-gray-100"
@@ -1563,6 +1619,17 @@ function App() {
             </div>
           </main>
         </>
+      )}
+      
+      {showPaymentSuccess && (
+        <PaymentSuccess onContinue={handlePaymentSuccessContinue} />
+      )}
+      
+      {showPaymentCancel && (
+        <PaymentCancel 
+          onRetry={handlePaymentRetry}
+          onBack={handlePaymentBack}
+        />
       )}
     </div>
   );

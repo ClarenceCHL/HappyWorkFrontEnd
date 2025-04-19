@@ -1,15 +1,56 @@
 import React from 'react';
 import { X, ShieldAlert, FileText, Bot, Gift } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+
+// Stripe公钥：从环境变量获取
+const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_YOUR_PUBLISHABLE_KEY';
+const stripePromise = loadStripe(STRIPE_KEY);
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPay: () => void; // Placeholder for payment initiation
-  onFreeAccess: () => void; // New prop for free access action
+  onPay: () => void; // 请保留，但我们会覆盖该功能
+  onFreeAccess: () => void;
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onFreeAccess }) => {
   if (!isOpen) return null;
+
+  // 处理Stripe支付
+  const handleStripeCheckout = async () => {
+    try {
+      console.log('开始创建Stripe支付会话...');
+      // 调用后端API创建支付会话
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // 根据需要传递产品信息，例如：
+          productName: '人设战略破局职场PUA方案',
+          amount: 4900, // 单位：分，49元
+        }),
+      });
+      
+      console.log('收到服务器响应:', response.status, response.statusText);
+      const session = await response.json();
+      console.log('解析响应数据:', session);
+      
+      // 如果创建会话成功，重定向到Stripe Checkout页面
+      if (session.url) {
+        console.log('准备跳转到支付页面:', session.url);
+        // 尝试使用window.open而不是location.href
+        window.open(session.url, '_self');
+      } else {
+        console.error('支付会话响应中没有URL字段:', session);
+        throw new Error('支付会话创建失败');
+      }
+    } catch (error) {
+      console.error('支付过程中出错:', error);
+      alert('支付过程中出错，请稍后再试');
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
@@ -57,11 +98,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
             {/* Payment Button */}
             <button
-              onClick={onPay}
+              onClick={handleStripeCheckout}
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-md hover:scale-105"
-              title="通过微信/支付宝/Stripe支付"
+              title="通过信用卡或微信支付"
             >
-              <span>微信/支付宝/Stripe</span>
+              <span>信用卡/微信支付</span>
             </button>
             
             {/* Limited Time Free Button */}

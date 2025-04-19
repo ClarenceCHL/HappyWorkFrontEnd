@@ -367,8 +367,7 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
       )}
 
       {/* Add CSS for modal animations (if not already globally defined) */}
-      {/* @ts-ignore */}
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{__html: `
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -413,7 +412,7 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         .animate-shine {
           animation: shine 1.5s linear infinite;
         }
-      `}</style>
+      `}} />
     </>
   );
 };
