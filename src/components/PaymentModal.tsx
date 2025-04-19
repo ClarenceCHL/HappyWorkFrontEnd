@@ -6,6 +6,13 @@ import { loadStripe } from '@stripe/stripe-js';
 const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_YOUR_PUBLISHABLE_KEY';
 const stripePromise = loadStripe(STRIPE_KEY);
 
+// 预定义的Stripe支付链接
+const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/28o4hM9hM7Dya4g001";
+// 预定义的支付宝链接
+const ALIPAY_PAYMENT_LINK = "https://buy.stripe.com/6oE3dI0Pebz2exG6op";
+// 预定义的微信支付链接
+const WECHAT_PAYMENT_LINK = "https://buy.stripe.com/28o4hM9hM7Dya4g001";
+
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,74 +23,13 @@ interface PaymentModalProps {
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onFreeAccess }) => {
   if (!isOpen) return null;
 
-  // 处理Stripe支付
-  const handleStripeCheckout = async () => {
+  // 处理Stripe支付 - 使用预定义链接直接跳转
+  const handleStripeCheckout = () => {
     try {
-      console.log('开始创建Stripe支付会话...');
-      // 获取API基础URL
-      const API_URL = import.meta.env.VITE_API_URL || 'https://happywork.today';
-      console.log('使用API URL:', API_URL);
-      
-      // 准备请求数据
-      const requestData = {
-        productName: '人设战略破局职场PUA方案',
-        amount: 4900, // 单位：分，49元
-      };
-      console.log('发送支付请求数据:', JSON.stringify(requestData));
-      
-      // 尝试直接使用XMLHttpRequest
-      return new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${API_URL}/api/create-checkout-session`, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.withCredentials = true;
-        
-        xhr.onload = function() {
-          console.log('XHR状态:', xhr.status);
-          console.log('XHR响应:', xhr.responseText);
-          
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              // 尝试解析JSON
-              if (!xhr.responseText || xhr.responseText.trim() === '') {
-                reject(new Error('服务器返回了空响应'));
-                return;
-              }
-              
-              const session = JSON.parse(xhr.responseText);
-              console.log('解析响应数据:', session);
-              
-              if (session.url) {
-                console.log('准备跳转到支付页面:', session.url);
-                window.open(session.url, '_self');
-                resolve();
-              } else {
-                reject(new Error(session.message || '支付会话创建失败: 未找到URL'));
-              }
-            } catch (error: any) {
-              console.error('JSON解析失败:', error);
-              reject(new Error(`无法解析服务器响应: ${error.message}, 原始响应: ${xhr.responseText}`));
-            }
-          } else {
-            reject(new Error(`服务器响应错误: ${xhr.status} ${xhr.statusText || ''}`));
-          }
-        };
-        
-        xhr.onerror = function() {
-          console.error('请求失败:', xhr.statusText);
-          reject(new Error('网络请求失败，请检查网络连接'));
-        };
-        
-        xhr.ontimeout = function() {
-          console.error('请求超时');
-          reject(new Error('请求超时，服务器响应时间过长'));
-        };
-        
-        // 发送请求
-        xhr.send(JSON.stringify(requestData));
-      });
+      console.log('跳转到预定义Stripe支付链接...');
+      window.open(STRIPE_PAYMENT_LINK, '_self');
     } catch (error: any) {
-      console.error('支付过程中出错:', error);
+      console.error('支付跳转过程中出错:', error);
       alert(`支付过程中出错: ${error.message || '未知错误'}`);
     }
   };
@@ -131,14 +77,32 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onPay, onF
           </div>
 
           {/* Payment Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            {/* Payment Button */}
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 flex-wrap">
+            {/* Stripe Payment Button */}
             <button
               onClick={handleStripeCheckout}
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-md hover:scale-105"
-              title="通过信用卡或微信支付"
+              title="通过信用卡支付"
             >
-              <span>信用卡/微信支付</span>
+              <span>信用卡支付</span>
+            </button>
+            
+            {/* Alipay Button */}
+            <button
+              onClick={() => window.open(ALIPAY_PAYMENT_LINK, '_self')}
+              className="w-full sm:w-auto bg-[#1677FF] hover:bg-[#0e5fd9] text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-md hover:scale-105"
+              title="通过支付宝支付"
+            >
+              <span>支付宝支付</span>
+            </button>
+            
+            {/* WeChat Pay Button */}
+            <button
+              onClick={() => window.open(WECHAT_PAYMENT_LINK, '_self')}
+              className="w-full sm:w-auto bg-[#07C160] hover:bg-[#06a251] text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-md hover:scale-105"
+              title="通过微信支付"
+            >
+              <span>微信支付</span>
             </button>
             
             {/* Limited Time Free Button */}
