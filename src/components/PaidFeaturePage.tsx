@@ -152,13 +152,9 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
       return; // 阻止后续支付逻辑
     }
 
-    // 原有支付逻辑 (当前是打开 PayPal 链接)
-    const paypalMeLink = "https://www.paypal.com/paypalme/HappyWorkFkPUA";
-    window.open(paypalMeLink, '_blank'); // 在新标签页打开支付链接
-    
-    // 关闭支付模态框，并开始检查支付状态
-    handleClosePaymentModal();
-    alert("支付页面已在新标签页打开。完成支付后，请返回此页面查看状态更新。");
+    // 不需要在这里执行任何操作，因为具体的支付逻辑会在PaymentModal组件中处理
+    // PaymentModal组件中会打开Stripe链接，并在用户确认支付后调用onPaymentSuccess
+    console.log("打开支付链接，实际支付动作由PaymentModal处理");
   };
 
   const handleFreeAccess = async () => {
