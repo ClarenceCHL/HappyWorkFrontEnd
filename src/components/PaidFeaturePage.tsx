@@ -146,9 +146,9 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
 
       const previewLink = latestQuestionnaire.preview_link;
       
-      // 跳转到预览页面
+      // 在当前页面跳转到预览页面，而不是新开标签页
       if (previewLink) {
-        window.open(`${API_BASE_URL}${previewLink}`, '_blank');
+        window.location.href = `${API_BASE_URL}${previewLink}`;
       } else {
         alert('预览链接不可用，请重新生成报告');
       }

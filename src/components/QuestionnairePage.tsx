@@ -317,8 +317,14 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({ onBack, onSubmit 
       }
 
       console.log('问卷提交成功:', data);
-      // 调用父组件传递的 onSubmit 函数，传递答案和预览链接
+      
+      // 仍然调用父组件传递的 onSubmit 函数，保持现有逻辑
       onSubmit(answers);
+      
+      // 如果返回了预览链接，直接在当前页面跳转
+      if (data.preview_link) {
+        window.location.href = `${API_BASE_URL}${data.preview_link}`;
+      }
       
     } catch (error) {
       console.error('提交问卷时出错:', error);
