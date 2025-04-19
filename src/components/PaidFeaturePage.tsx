@@ -5,7 +5,7 @@ import PaymentModal from './PaymentModal';
 // 临时的 API URL 和 Token 获取方式，后续应替换为实际实现
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; 
 // 修改 localStorage 的键名以匹配 App.tsx
-const getToken = () => localStorage.getItem('token');
+const getToken = () => localStorage.getItem('userToken');
 
 // 定义 App.tsx 中的 PageType 类型，确保一致
 type PageType = 'home' | 'chat' | 'auth' | 'paidFeature';
@@ -24,97 +24,6 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
-
-  // 检查支付状态 (这个函数现在由手动触发调用)
-  const checkPaymentStatus = async () => {
-    const token = getToken();
-    if (!token) {
-      // 如果本地没有 token，肯定需要登录
-      console.log("本地无 Token，跳转登录");
-      onLoginRequired('paidFeature');
-      return false; 
-    }
-
-    if (isCheckingPayment) return false; 
-    
-    setIsCheckingPayment(true);
-    console.log("手动检查支付状态...");
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/check-payment-status`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      // 首先检查 HTTP 状态码
-      if (!response.ok) {
-        // 尝试解析错误响应体
-        let errorMsg = `服务器错误: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.message || errorMsg;
-          // 检查是否是认证错误 (401, 403等)
-          if (response.status === 401 || response.status === 403 || errorMsg.includes("无效") || errorMsg.includes("过期") || errorMsg.includes("授权")) {
-            console.error("认证失败或Token过期，跳转登录:", errorMsg);
-            alert("登录状态无效或已过期，请重新登录。");
-            onLoginRequired('paidFeature');
-            return false;
-          }
-        } catch (e) {
-          // 如果响应体不是 JSON 或解析失败
-          console.error("无法解析错误响应体 或 非认证错误:", response.status, response.statusText);
-        }
-        alert(`检查支付状态失败: ${errorMsg}`);
-        return false;
-      }
-
-      // 如果 HTTP 状态码 OK (2xx)，解析 JSON
-      const data = await response.json();
-      
-      // 检查业务逻辑状态
-      if (data.status === 'success' && data.is_paid) {
-        console.log("检测到支付成功，更新状态");
-        onPaymentSuccess(); // 更新App.tsx中的状态
-        
-        setSuccessMessage('支付已确认，感谢您的支持！');
-        setShowSuccessToast(true);
-        setTimeout(() => setShowSuccessToast(false), 3000);
-
-        return true; // 指示支付成功
-      } else if (data.status === 'success' && !data.is_paid) {
-        console.log("支付状态未确认 (is_paid: false)");
-        alert("尚未检测到您的支付信息。如果您已支付，请稍后再试或联系客服。");
-        return false; // 指示支付未成功
-      } else if (data.status === 'error') {
-         // 后端返回业务错误，检查是否是认证相关
-         console.error("检查支付状态失败 (后端返回错误):", data.message);
-         const message = data.message || "未知错误";
-         if (message.includes("无效") || message.includes("过期") || message.includes("授权")) {
-           alert("登录状态无效或已过期，请重新登录。");
-           onLoginRequired('paidFeature');
-         } else {
-           alert(`检查支付状态失败: ${message}`);
-         }
-         return false; // 指示检查失败
-      } else {
-        // 非预期的成功响应格式
-        console.error("检查支付状态收到意外成功响应:", data);
-        alert("检查支付状态时收到服务器意外响应，请稍后再试。");
-        return false;
-      }
-
-    } catch (error) {
-      // 网络错误或其他 fetch 异常
-      console.error("检查支付状态出错 (网络/Fetch):", error);
-      alert("检查支付状态时发生网络错误，请检查您的网络连接或稍后再试。");
-      return false; // 指示检查失败
-    } finally {
-      setIsCheckingPayment(false);
-    }
-  };
 
   const handleOpenPaymentModal = () => {
     setIsPaymentModalOpen(true);
@@ -122,78 +31,73 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
 
   const handleClosePaymentModal = () => {
     setIsPaymentModalOpen(false);
-    // 关闭时不再需要自动启动检查
-    // startPaymentCheck();
   };
 
-  // 新增：处理来自 PaymentModal 的手动检查请求
-  const handleManualPaymentCheck = async () => {
-    const paymentConfirmed = await checkPaymentStatus();
-    if (paymentConfirmed) {
-      // 如果支付确认成功，关闭模态框
-      handleClosePaymentModal();
-    }
-    // 如果支付未确认，模态框保持打开，checkPaymentStatus 内部已提示用户
-  };
-
-  // PayPal 支付处理 (不再是主要流程，但保留以防万一)
   const handlePayment = () => {
+    // 新增：检查用户是否登录
     const token = getToken();
     if (!token) {
+      // 调用登录回调，并指定返回目标为 'paidFeature'
       onLoginRequired('paidFeature'); 
-      handleClosePaymentModal();
-      return;
+      handleClosePaymentModal(); // 关闭支付弹窗
+      return; // 阻止后续支付逻辑
     }
+
+    // 原有支付逻辑 (当前是打开 PayPal 链接)
     const paypalMeLink = "https://www.paypal.com/paypalme/HappyWorkFkPUA";
-    window.open(paypalMeLink, '_blank');
-    handleClosePaymentModal();
-    alert("支付页面已在新标签页打开。完成支付后，请手动刷新页面或稍后查看状态。"); // 更新提示
+    window.open(paypalMeLink, '_blank'); // 在新标签页打开支付链接
+    // Consider closing the modal after opening the link, or providing user feedback
+    // handleClosePaymentModal(); 
+    // alert("正在打开 PayPal 支付页面...");
   };
 
-  // 免费访问处理 (onFreeAccess 现在需要是 async)
   const handleFreeAccess = async () => {
     console.log("处理限时免费访问...");
     const token = getToken();
 
     if (!token) {
+      // 调用登录回调，并指定返回目标为 'paidFeature'
       onLoginRequired('paidFeature'); 
-      return; // 提前返回
+      return;
     }
 
-    // 注意：try...catch 应该在调用处处理，这里直接返回 Promise
-    // 让 PaymentModal 中的调用者处理加载状态和错误
-    return fetch(`${API_BASE_URL}/api/activate-free-access`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({}) 
-    })
-    .then(response => response.json())
-    .then(result => {
-      if (result.status === 'success') {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/activate-free-access`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({}) // POST 请求通常需要 body，即使是空的
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.status === 'success') {
         console.log("免费访问激活成功:", result.message);
-        handleClosePaymentModal(); // 关闭模态框
-        onPaymentSuccess(); // 更新 App 状态
+        // 关闭模态框
+        handleClosePaymentModal();
+        
+        // !!! 调用回调函数通知 App 更新状态 !!!
+        onPaymentSuccess(); 
 
         // 显示成功提示
         setSuccessMessage('限时免费访问成功！即将进入下一步...');
         setShowSuccessToast(true);
-        setTimeout(() => setShowSuccessToast(false), 2700);
-        setTimeout(() => setSuccessMessage(''), 3000);
-        // 不需要返回特定值，成功即可
+        setTimeout(() => {
+          setShowSuccessToast(false);
+        }, 2700);
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 3000);
       } else {
         console.error("免费访问激活失败:", result.message);
-        // 抛出错误，让调用者处理
-        throw new Error(result.message || '激活失败，请稍后再试');
+        alert(`激活失败: ${result.message || '请稍后再试'}`);
       }
-    })
-    .catch(error => {
+    } catch (error) {
       console.error("调用免费访问 API 时出错:", error);
-      // 重新抛出错误，让调用者处理
-      throw new Error("请求失败，请检查网络连接或稍后再试。");
-    });
+      alert("请求失败，请检查网络连接或稍后再试。");
+    }
   };
 
   const handleDownloadReport = async () => {
@@ -244,7 +148,7 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
       
       // 在当前页面跳转到预览页面，而不是新开标签页
       if (previewLink) {
-        window.location.href = previewLink;
+        window.location.href = `${API_BASE_URL}${previewLink}`;
       } else {
         alert('预览链接不可用，请重新生成报告');
       }
@@ -274,17 +178,6 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
       >
         <span className="text-sm font-medium">{successMessage}</span>
       </div>
-
-      {/* 加载指示器现在由 checkPaymentStatus 内部的 isCheckingPayment 控制 */}
-      {!isUserPaid && isCheckingPayment && (
-        <div className="fixed top-16 left-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center z-50">
-          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span className="text-sm font-medium">正在检查支付状态...</span>
-        </div>
-      )}
 
       <div className="min-h-screen bg-gradient-to-b from-[#1a1a1a] to-[#111111] text-gray-100 p-6 md:p-10 relative overflow-hidden">
         {/* Background Glows */}
@@ -428,7 +321,7 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
                 <div className="bg-[#1a1a1a] px-6 py-4 rounded-md relative">
                   <p className="text-lg font-medium text-amber-300 mb-1">一次付费，永久下载</p>
                   <p className="text-4xl md:text-5xl font-bold text-white relative">
-                    ¥49
+                    ¥20
                     <span 
                       className="absolute left-0 right-0 top-1/2 h-0.5 bg-red-500 transform -translate-y-1/2 scale-x-0 group-hover/cta:scale-x-100 transition-transform duration-300 origin-left"
                       aria-hidden="true"
@@ -463,19 +356,19 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         </div>
       </div>
 
-      {/* Payment Modal (传递新的 onManualCheck prop) */} 
+      {/* Payment Modal (仅在未付费时需要打开) */}
       {!isUserPaid && (
         <PaymentModal
           isOpen={isPaymentModalOpen}
           onClose={handleClosePaymentModal}
-          onPay={handlePayment} // 保留
-          onFreeAccess={handleFreeAccess} // 确保 handleFreeAccess 返回 Promise
-          onManualCheck={handleManualPaymentCheck} // 传递新的处理函数
+          onPay={handlePayment}
+          onFreeAccess={handleFreeAccess}
         />
       )}
 
       {/* Add CSS for modal animations (if not already globally defined) */}
-      <style dangerouslySetInnerHTML={{__html: `
+      {/* @ts-ignore */}
+      <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -520,7 +413,7 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         .animate-shine {
           animation: shine 1.5s linear infinite;
         }
-      `}} />
+      `}</style>
     </>
   );
 };
