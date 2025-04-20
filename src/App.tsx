@@ -216,8 +216,15 @@ function App() {
       // 刷新页面动画
       const nav = navRef.current;
       if (nav) {
-        nav.style.opacity = '1';
-        nav.style.transform = 'translateY(0)';
+        // 确保导航栏尺寸正确
+        nav.style.width = '100%';
+        nav.style.maxWidth = '100vw';
+        
+        // 使用 requestAnimationFrame 确保渲染完成后再触发动画
+        requestAnimationFrame(() => {
+          nav.style.opacity = '1';
+          nav.style.transform = 'translateY(0)';
+        });
       }
     }
   }, [showChat, showAuth, showPaidFeaturePage, showQuestionnairePage]);
@@ -847,6 +854,25 @@ function App() {
     handleOpenAuth('login', returnTo); 
   };
 
+  // 添加初始导航栏加载动画优化
+  useEffect(() => {
+    // 页面加载时导航栏初始化
+    const nav = navRef.current;
+    if (nav) {
+      // 先设置一个安全的初始宽度
+      nav.style.width = '100%';
+      nav.style.maxWidth = '100vw';
+      
+      // 延迟显示导航栏，确保其他元素已加载
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          nav.style.opacity = '1';
+          nav.style.transform = 'translateY(0)';
+        });
+      }, 200); // 增加延迟时间
+    }
+  }, []);
+
   return (
     <div 
       className="min-h-screen bg-[#111111] text-gray-100"
@@ -944,27 +970,30 @@ function App() {
           {/* Navigation - 灵动岛效果导航栏 */}
           <div 
             ref={navRef}
-            className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out"
+            className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out px-1"
             style={{
               opacity: 0,
-              transform: 'translateY(-20px)'
+              transform: 'translateY(-5px)', // 进一步减小初始偏移量
+              maxWidth: '100vw', // 限制最大宽度
+              overflow: 'hidden' // 防止内容溢出
             }}
           >
             <div 
               className={`max-w-5xl mx-auto transition-all duration-300 ease-in-out ${
                 scrollY > 100 
-                  ? 'mt-2 sm:mt-4 px-2 sm:px-4 rounded-full bg-[#111111]/95 backdrop-blur-lg shadow-lg border border-gray-800/30 animate-nav-glow' 
-                  : 'mt-3 sm:mt-6 px-3 sm:px-6'
+                  ? 'mt-2 px-2 rounded-full bg-[#111111]/95 backdrop-blur-lg shadow-lg border border-gray-800/30 animate-nav-glow' 
+                  : 'mt-2 px-2'
               }`}
               style={{
-                width: scrollY > 100 ? 'calc(100% - 1rem)' : '100%',
-                transform: scrollY > 100 ? 'scale(0.95)' : 'scale(1)'
+                width: scrollY > 100 ? 'calc(100% - 8px)' : '100%', // 减小宽度差值
+                transform: scrollY > 100 ? 'scale(0.99)' : 'scale(1)', // 进一步减少缩放强度
+                maxWidth: '100%' // 确保不会超出父容器
               }}
             >
-              <div className="py-2 sm:py-4 flex items-center justify-between">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Shield className={`${scrollY > 100 ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-5 h-5 sm:w-6 sm:h-6'} text-blue-400 transition-all duration-300`} />
-                  <span className={`${scrollY > 100 ? 'text-sm sm:text-base' : 'text-base sm:text-lg'} font-medium transition-all duration-300`}>Happy Work</span>
+              <div className="py-2 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Shield className={`${scrollY > 100 ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400 transition-all duration-300`} />
+                  <span className={`${scrollY > 100 ? 'text-sm' : 'text-base'} font-medium transition-all duration-300 whitespace-nowrap`}>Happy Work</span>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
                   {/* 付费功能按钮 (根据 isUserPaid 修改文本) */}

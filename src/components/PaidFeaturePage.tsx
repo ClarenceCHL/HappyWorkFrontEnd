@@ -365,55 +365,6 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
           onFreeAccess={handleFreeAccess}
         />
       )}
-
-      {/* Add CSS for modal animations (if not already globally defined) */}
-      {/* @ts-ignore */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes fadeInDown {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(20px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out forwards;
-        }
-        .animate-fade-in-down {
-          animation: fadeInDown 0.8s ease-out forwards;
-        }
-        .animate-fade-in-up {
-          animation: fadeInUp 0.3s ease-out forwards;
-          opacity: 0;
-        }
-
-        .animation-delay-200 { animation-delay: 0.2s; }
-        .animation-delay-300 { animation-delay: 0.3s; }
-        .animation-delay-400 { animation-delay: 0.4s; }
-        .animation-delay-500 { animation-delay: 0.5s; }
-        .animation-delay-600 { animation-delay: 0.6s; }
-        .animation-delay-700 { animation-delay: 0.7s; }
-        .animation-delay-800 { animation-delay: 0.8s; }
-
-        /* Ensure elements are hidden before animation starts */
-        .animate-fade-in, .animate-fade-in-down, .animate-fade-in-up {
-          opacity: 0;
-        }
-
-        @keyframes shine {
-          0% { background-position: -250% center; }
-          100% { background-position: 250% center; }
-        }
-        .animate-shine {
-          animation: shine 1.5s linear infinite;
-        }
-      `}</style>
     </>
   );
 };
