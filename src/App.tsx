@@ -1488,8 +1488,9 @@ function App() {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="bg-gray-600 hover:bg-gray-500 text-white rounded-full p-2.5 transition-colors duration-200"
+                        className="bg-gray-600 hover:bg-gray-500 text-white rounded-full p-2.5 transition-colors duration-200 cursor-not-allowed opacity-60"
                         title="上传图片"
+                        disabled={true}
                       >
                         <ImageIcon className="w-5 h-5" />
                       </button>

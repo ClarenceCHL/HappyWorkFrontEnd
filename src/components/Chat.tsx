@@ -542,7 +542,8 @@ export function Chat({ onBack, currentMessages, chatHistory, onSendMessage, onSe
                       <button
                         type="button"
                         onClick={() => newChatFileInputRef.current?.click()}
-                        className="text-gray-400 hover:text-gray-300 flex items-center gap-1"
+                        className="text-gray-400 hover:text-gray-300 flex items-center gap-1 cursor-not-allowed opacity-60"
+                        disabled={true}
                       >
                         <ImageIcon className="w-4 h-4" />
                         <span className="text-sm">添加图片</span>
