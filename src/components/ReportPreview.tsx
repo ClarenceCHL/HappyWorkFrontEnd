@@ -20,7 +20,7 @@ const ReportPreview: React.FC<ReportPreviewProps> = ({ content, timestamp, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto">
+    <div className="print-only-block fixed inset-0 z-50 bg-gray-900 overflow-y-auto">
       {/* 打印样式 - 只在打印时显示 */}
       <style type="text/css" media="print">
         {`

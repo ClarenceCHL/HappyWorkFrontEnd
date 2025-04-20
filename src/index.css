@@ -100,8 +100,19 @@
     overflow: visible !important;
   }
   
+  /* 隐藏所有标记为 no-print 的元素 */
   .no-print {
     display: none !important;
+  }
+  
+  /* 确保标记为 print-only-block 的元素在打印时显示为块级元素 */
+  .print-only-block {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important; /* 确保背景是白色 */
   }
   
   .report-container {
@@ -140,8 +151,8 @@
     break-inside: avoid !important;
   }
   
-  /* 确保内容不被截断 */
-  * {
+  /* 强制显示所有内容，但仅限于打印的报告部分 */
+  .print-only-block * {
     overflow: visible !important;
   }
   

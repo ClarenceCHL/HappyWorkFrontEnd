@@ -236,7 +236,8 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         />
       )}
 
-      <div className="min-h-screen bg-gradient-to-b from-[#1a1a1a] to-[#111111] text-gray-100 p-6 md:p-10 relative overflow-hidden">
+      {/* 主容器，添加no-print类使其在打印时不显示 */}
+      <div className="no-print min-h-screen bg-gradient-to-b from-[#1a1a1a] to-[#111111] text-gray-100 p-6 md:p-10 relative overflow-hidden">
         {/* Background Glows */}
         <div className="absolute top-0 left-0 w-96 h-96 bg-amber-500/10 rounded-full blur-[150px] opacity-50 -translate-x-1/2 -translate-y-1/2"></div>
         <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-[120px] opacity-40 translate-x-1/3 translate-y-1/3"></div>
