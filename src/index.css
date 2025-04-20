@@ -49,3 +49,116 @@
 .animate-shine {
   animation: shine 1.5s linear infinite;
 }
+
+/* 报告预览样式 */
+.report-content.prose {
+  @apply text-gray-300;
+}
+
+.report-content.prose h1,
+.report-content.prose h2,
+.report-content.prose h3,
+.report-content.prose h4 {
+  @apply text-amber-400 font-bold;
+}
+
+.report-content.prose h1 {
+  @apply text-2xl border-b border-amber-500/30 pb-2 mb-4;
+}
+
+.report-content.prose h2 {
+  @apply text-xl mt-8 mb-4;
+}
+
+.report-content.prose h3 {
+  @apply text-lg mt-6 mb-3;
+}
+
+.report-content.prose p {
+  @apply my-4 leading-relaxed;
+}
+
+.report-content.prose ul,
+.report-content.prose ol {
+  @apply pl-5 my-4;
+}
+
+.report-content.prose li {
+  @apply mb-2;
+}
+
+.report-content.prose blockquote {
+  @apply border-l-4 border-amber-500 pl-4 py-1 my-4 bg-gray-800/50 italic;
+}
+
+/* 打印样式 */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .report-container {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+  
+  .report-content.prose {
+    color: #333 !important;
+    display: block !important;
+    page-break-inside: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  .report-content.prose h1,
+  .report-content.prose h2,
+  .report-content.prose h3,
+  .report-content.prose h4 {
+    color: #b45309 !important; /* amber-700 */
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  
+  .report-content.prose p, 
+  .report-content.prose li {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  /* 确保内容不被截断 */
+  * {
+    overflow: visible !important;
+  }
+  
+  /* 强制显示所有内容 */
+  html, body, #root, .fixed, .inset-0 {
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+  
+  /* 调整页面布局 */
+  .my-16 {
+    margin-top: 1cm !important;
+    margin-bottom: 1cm !important;
+  }
+  
+  .p-10 {
+    padding: 1cm 0.5cm !important;
+  }
+}

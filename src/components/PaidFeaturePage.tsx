@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ShieldCheck, FileText, BrainCircuit, BarChart, Crown, Mail, Download, RefreshCw, Edit3 } from 'lucide-react';
 import PaymentModal from './PaymentModal';
+import ReportPreview from './ReportPreview';
 
 // 临时的 API URL 和 Token 获取方式，后续应替换为实际实现
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'; 
@@ -24,6 +25,9 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [reportContent, setReportContent] = useState<string>("");
+  const [isPreviewVisible, setIsPreviewVisible] = useState<boolean>(false);
+  const [reportTimestamp, setReportTimestamp] = useState<string>("");
 
   const handleOpenPaymentModal = () => {
     setIsPaymentModalOpen(true);
@@ -110,6 +114,10 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
     }
 
     try {
+      // 显示加载状态
+      // 先关闭任何已打开的预览
+      setIsPreviewVisible(false);
+      
       // 首先获取用户提交的最新问卷
       const response = await fetch(`${API_BASE_URL}/user/questionnaires`, {
         method: 'GET',
@@ -144,14 +152,54 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
         return;
       }
 
+      // 获取预览ID
       const previewLink = latestQuestionnaire.preview_link;
-      
-      // 在当前页面跳转到预览页面，而不是新开标签页
-      if (previewLink) {
-        window.location.href = `${API_BASE_URL}${previewLink}`;
-      } else {
+      if (!previewLink) {
         alert('预览链接不可用，请重新生成报告');
+        return;
       }
+      
+      // 从URL中提取预览ID
+      const previewId = previewLink.split('/').pop();
+      if (!previewId) {
+        alert('预览链接格式不正确');
+        return;
+      }
+
+      // 去除预览ID中可能包含的查询参数部分
+      const cleanPreviewId = previewId.split('?')[0];
+      
+      // 直接从后端API获取报告内容
+      const reportResponse = await fetch(`${API_BASE_URL}/preview/${cleanPreviewId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!reportResponse.ok) {
+        throw new Error('获取报告内容失败');
+      }
+      
+      const reportData = await reportResponse.json();
+      
+      if (reportData.status === 'error') {
+        alert(`获取报告失败: ${reportData.message}`);
+        return;
+      }
+      
+      // 保存报告内容到状态
+      setReportContent(reportData.report);
+      
+      // 设置时间戳（如果有）
+      if (reportData.created_at) {
+        const date = new Date(reportData.created_at);
+        setReportTimestamp(date.toLocaleString('zh-CN'));
+      }
+      
+      // 显示报告预览
+      setIsPreviewVisible(true);
     } catch (error) {
       console.error('获取报告失败:', error);
       alert('获取报告失败，请稍后再试');
@@ -178,6 +226,15 @@ const PaidFeaturePage: React.FC<PaidFeaturePageProps> = ({ onClose, onLoginRequi
       >
         <span className="text-sm font-medium">{successMessage}</span>
       </div>
+
+      {/* 报告预览组件 */}
+      {isPreviewVisible && (
+        <ReportPreview 
+          content={reportContent} 
+          timestamp={reportTimestamp} 
+          onClose={() => setIsPreviewVisible(false)} 
+        />
+      )}
 
       <div className="min-h-screen bg-gradient-to-b from-[#1a1a1a] to-[#111111] text-gray-100 p-6 md:p-10 relative overflow-hidden">
         {/* Background Glows */}
